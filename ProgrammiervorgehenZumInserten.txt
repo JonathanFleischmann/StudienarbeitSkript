@@ -4,3 +4,8 @@ Mit Agency Table angefangen:
 3. Selects auf Foreign Reference Eigenschaften machen
 4. IDs zu Foreign References ergänzen
 5. Nächste Inserts mithilfe der generierten IDs als Fremdschlüssel ausführen
+
+
+TODO:
+
+im Nachhinein über ein weiteres Skript erkennen, ob Wiederholungen bei den rides vorhanden sind und auflösen

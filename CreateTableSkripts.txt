@@ -91,6 +91,7 @@ CREATE TABLE ride (
                       repeat_after NUMBER,
                       route NUMBER NOT NULL,
                       period NUMBER NOT NULL,
+                      CONSTRAINT unique_ride UNIQUE (repeat_after, route, period),
                       CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
                       CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
 );
@@ -118,8 +119,7 @@ BEGIN
 END;
 CREATE TABLE ride_exception (
                                 ride NUMBER NOT NULL,
-                                exception_table NUMBER NOT NULL,
-                                CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
+                                exception_table NUMBER NOT NULL,                                CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
                                 CONSTRAINT fk_ride FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
                                 CONSTRAINT fk_exception FOREIGN KEY (exception_table) REFERENCES exception_table(id) ON DELETE CASCADE
 );
@@ -181,6 +181,7 @@ CREATE TABLE path (
                       end_point INTEGER NOT NULL,
                       arrival_time TIMESTAMP WITH TIME ZONE,
                       descend_type INTEGER,
+		      CONSTRAINT unique_path UNIQUE (start_point, end_point, is_ride, walk_type, ride),
                       CONSTRAINT fk_walk_type FOREIGN KEY (walk_type) REFERENCES walk_type(id),
                       CONSTRAINT fk_ride_in_path FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
                       CONSTRAINT fk_start_point FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
