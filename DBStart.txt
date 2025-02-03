@@ -1,0 +1,19 @@
+lsnrctl Status
+
+lsnrctl start
+
+sqlplus sys as sysdba
+
+STARTUP;
+
+SELECT status FROM v$instance;
+
+SHOW CON_NAME;
+
+ALTER SESSION SET CONTAINER = XEPDB1;
+
+
+
+ODER:
+
+über services.msc in Windows + R den Listener / OracleServiceXE neu starten

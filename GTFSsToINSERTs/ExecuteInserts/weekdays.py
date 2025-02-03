@@ -1,0 +1,60 @@
+import sys
+from ExecuteInserts.data_storage import DatabaseTable
+
+
+def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
+    """
+    Diese Funktion extrahiert die Wochentag-Kombinationen aus der GTFS-Tabelle calendar 
+    und bildet sie auf die Datenbank-Tabelle weekdays ab.
+    """
+
+    # Finde heraus, welche Spalten in der DatabaseTabelle route vorhanden sein werden anhand der GTFSTabelle
+    gtfs_table_columns = calendar_gtfs_table.get_columns()
+    database_table_columns = []
+
+
+    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
+    necessary_values_found = {
+        "monday": False,
+        "tuesday": False,
+        "wednesday": False,
+        "thursday": False,
+        "friday": False,
+        "saturday": False,
+        "sunday": False
+    }
+    for column in gtfs_table_columns:
+        if column in necessary_values_found:
+            database_table_columns.append(column)
+            necessary_values_found[column] = True
+        elif column not in ["start_date", "end_date"]:
+            print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
+            sys.exit(1)
+    
+    # Überprüfe 
+    for necessary_value, found in necessary_values_found.items():
+        if not found:
+            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle routes gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
+            sys.exit(1)
+
+    # Erstelle ein DatabaseTable-Objekt für die Tabelle route
+    weekdays_database_table = DatabaseTable("weekdays", database_table_columns)
+
+    weekdays_database_table.add_unique_columns(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"])
+
+    # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
+    weekdays_database_table.set_all_values(calendar_gtfs_table.get_all_records_without_distinct_attributes(["start_date", "end_date"]))
+
+    weekdays_database_table.set_data_types(
+        {
+            "monday": "INTEGER",
+            "tuesday": "INTEGER",
+            "wednesday": "INTEGER",
+            "thursday": "INTEGER",
+            "friday": "INTEGER",
+            "saturday": "INTEGER",
+            "sunday": "INTEGER"
+        }
+    )
+
+    return weekdays_database_table

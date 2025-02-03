@@ -1,0 +1,6 @@
+Mit Agency Table angefangen: 
+1. Inserts generieren und ausführen
+2. Foreign References generieren
+3. Selects auf Foreign Reference Eigenschaften machen
+4. IDs zu Foreign References ergänzen
+5. Nächste Inserts mithilfe der generierten IDs als Fremdschlüssel ausführen
