@@ -2,7 +2,10 @@ from ExecuteInserts.agency import generate_agency_database_table_from_gtfs_table
 from ExecuteInserts.route import generate_route_database_table_from_gtfs_table
 from ExecuteInserts.weekdays import generate_weekdays_database_table_from_gtfs_table
 from ExecuteInserts.period import generate_period_database_table_from_gtfs_table
+from ExecuteInserts.ride import generate_ride_database_table_from_gtfs_tables
+
 from ExecuteInserts.db_executions import do_inserts, select_generated_ids
+
 
 
 
@@ -41,5 +44,13 @@ def execute_inserts(gtfs_table_map, conn):
     do_inserts(period_database_table, conn)
 
     select_generated_ids(period_database_table, conn)
+
+    
+
+    # ride_database_table = generate_ride_database_table_from_gtfs_tables(gtfs_table_map["trips"], period_database_table, route_database_table)
+
+    # do_inserts(ride_database_table, conn)
+
+    # select_generated_ids(ride_database_table, conn)
 
 
