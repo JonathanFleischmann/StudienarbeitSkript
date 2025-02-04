@@ -237,14 +237,14 @@ class DatabaseTable:
                 # generiere die WHERE-Bedingung für die unique_columns
                 unique_expression = ""
                 for index, unique_column in enumerate(unique_columns):
-                    unique_expression += " " + unique_column + " = "
+                    unique_expression += " " + unique_column
                     
                     if unique_column not in self.columns:
-                        unique_expression += "NULL"
+                        unique_expression += "IS NULL"
                     elif self.data_types[unique_column] == "TEXT":
-                        unique_expression += f"'{record[column_positions[unique_column]].replace("'", "''")}'"
+                        unique_expression += f" = '{record[column_positions[unique_column]].replace("'", "''")}'"
                     else:
-                        unique_expression += str(record[column_positions[unique_column]])
+                        unique_expression += " = " + str(record[column_positions[unique_column]])
                     if index < len(unique_columns) - 1:
                         unique_expression += " AND"
                         

@@ -8,6 +8,8 @@ def main():
 
     gtfs_tables = get_table_map_from_GTFSs()
 
+    print("\n\n")
+
     execute_inserts(gtfs_tables, conn)
 
 
