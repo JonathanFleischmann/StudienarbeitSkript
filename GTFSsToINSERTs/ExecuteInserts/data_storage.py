@@ -238,13 +238,16 @@ class DatabaseTable:
                 unique_expression = ""
                 for index, unique_column in enumerate(unique_columns):
                     unique_expression += " " + unique_column + " = "
-                    # print (unique_column + " = " + str(column_positions[unique_column]))
-                    if self.data_types[unique_column] == "TEXT":
+                    
+                    if unique_column not in self.columns:
+                        unique_expression += "NULL"
+                    elif self.data_types[unique_column] == "TEXT":
                         unique_expression += f"'{record[column_positions[unique_column]].replace("'", "''")}'"
                     else:
                         unique_expression += str(record[column_positions[unique_column]])
                     if index < len(unique_columns) - 1:
                         unique_expression += " AND"
+                        
                 select_statement += unique_expression
                 # print(unique_expression)
 
