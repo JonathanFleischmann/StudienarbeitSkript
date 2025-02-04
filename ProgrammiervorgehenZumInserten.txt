@@ -10,6 +10,8 @@ TODO:
 
 im Nachhinein über ein weiteres Skript erkennen, ob Wiederholungen bei den rides vorhanden sind und auflösen
 
+im Nachhinein beim EInfügen der stop_times, wenn es bei den Trips mehrere gleiche Varianten (gleiches headsign) mit unterschiedlicher direction_id gibt dann neue Variante mit umgekehrten stop_times hinzufügen, wenn es bereits zwei gibt (mit unterschiedlichen Headsigns), dann Richtung bei entsprechendem umkehren
+
 vllt. im Nachhinein headsign auf Basis der Stops ergänzen
 
 
