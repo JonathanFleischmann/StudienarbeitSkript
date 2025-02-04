@@ -9,3 +9,10 @@ Mit Agency Table angefangen:
 TODO:
 
 im Nachhinein über ein weiteres Skript erkennen, ob Wiederholungen bei den rides vorhanden sind und auflösen
+
+vllt. im Nachhinein headsign auf Basis der Stops ergänzen
+
+
+PROBLEM:
+
+Bei stop_times gehen bei einem trip_id key in der map datensätze verloren, man müsste einen zusammengesetzten Schlüssel machen (trip_id und sequence), aber am besten wäre eine map die afu trip id und sequnece keys hat

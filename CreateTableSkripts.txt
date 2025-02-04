@@ -86,12 +86,10 @@ BEGIN
 END;
 CREATE TABLE ride (
                       id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                      start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-                      end_time TIMESTAMP WITH TIME ZONE NOT NULL,
-                      repeat_after NUMBER,
                       route NUMBER NOT NULL,
                       period NUMBER NOT NULL,
-                      CONSTRAINT unique_ride UNIQUE (repeat_after, route, period),
+		      headsign VARCHAR2(200),
+                      CONSTRAINT unique_ride UNIQUE (route, period, trip_headsign),
                       CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
                       CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
 );
