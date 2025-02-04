@@ -19,10 +19,12 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
         "start_date": False,
         "end_date": False
     }
+    used_columns = []
     for column in gtfs_table_columns:
         if column in necessary_values_found:
             database_table_columns.append(column)
             necessary_values_found[column] = True
+            used_columns.append(column)
         elif column not in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]:
             print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
             sys.exit(1)
@@ -38,7 +40,7 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     period_database_table.set_all_values(
-        calendar_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+        calendar_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
     )
 
     # Füge die Spalte für die Foreign-Keys auf die weekdays hinzu

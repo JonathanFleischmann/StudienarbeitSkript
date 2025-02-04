@@ -18,20 +18,26 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
         "route_short_name": False,
         "agency_id": False
     }
+    used_columns = []
     for column in gtfs_table_columns:
         if column == "route_long_name":
             database_table_columns.append("name")
             necessary_values_found["route_long_name"] = True
+            used_columns.append(column)
         elif column == "route_short_name":
             database_table_columns.append("short_name")
             necessary_values_found["route_short_name"] = True
+            used_columns.append(column)
         elif column == "route_type":
             database_table_columns.append("type")
+            used_columns.append(column)
         elif column == "route_desc":
             database_table_columns.append("description")
+            used_columns.append(column)
         elif column == "agency_id":
             database_table_columns.append("agency")
             necessary_values_found["agency_id"] = True
+            used_columns.append(column)
         else:
             print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
             sys.exit(1)
@@ -47,7 +53,7 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     route_database_table.set_all_values(
-        routes_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+        routes_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
     )
 
     route_database_table.add_unique_columns(["name", "agency"])

@@ -16,14 +16,18 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
     necessary_values_found = {
         "agency_name": False
     }
+    used_columns = []
     for column in gtfs_table_columns:
         if column == "agency_name":
             database_table_columns.append("name")
             necessary_values_found["agency_name"] = True
+            used_columns.append(column)
         elif column == "agency_url":
             database_table_columns.append("url")
+            used_columns.append(column)
         elif column == "agency_lang":
             database_table_columns.append("language")
+            used_columns.append(column)
         else:
             print(f"Die Spalte {column} wird nicht in der Datenbanktabelle agency abgebildet.", file=sys.stderr)
             sys.exit(1)
@@ -42,7 +46,7 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
 
     # Füge die Datensätze der GTFS-Tabelle agency in die Datenbanktabelle ein
     agency_database_table.set_all_values(
-        agency_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+        agency_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
     )
 
     agency_database_table.set_data_types(
