@@ -107,7 +107,8 @@ BEGIN
 END;
 CREATE TABLE ride_exception (
                                 ride NUMBER NOT NULL,
-                                exception_table NUMBER NOT NULL,                                CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
+                                exception_table NUMBER NOT NULL,                                
+				CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
                                 CONSTRAINT fk_ride FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
                                 CONSTRAINT fk_exception FOREIGN KEY (exception_table) REFERENCES exception_table(id) ON DELETE CASCADE
 );
@@ -122,23 +123,19 @@ CREATE TABLE height (
                         floor NUMBER,
                         CONSTRAINT unique_name_sea_level_and_floor UNIQUE (name, above_sea_level, floor)
 );
-CREATE TABLE traffic_centre_type (
-                                     id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                                     type VARCHAR2(50) UNIQUE NOT NULL
-);
 CREATE TABLE traffic_centre (
                                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                                 name VARCHAR2(100),
-                                traffic_centre_type NUMBER NOT NULL,
+                                type NUMBER NOT NULL,
                                 latitude NUMBER(20, 15),
                                 longitude NUMBER(20, 15),
                                 CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
-                                CONSTRAINT fk_traffic_centre_type FOREIGN KEY (traffic_centre_type) REFERENCES traffic_centre_type(id)
+                                CONSTRAINT fk_traffic_centre_type FOREIGN KEY (type) REFERENCES location_type(id)
 );
 CREATE TABLE traffic_point (
                                id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                                name VARCHAR2(100),
-                               location_type NUMBER NOT NULL,
+                               location_type NUMBER,
                                latitude NUMBER(20, 15),
                                longitude NUMBER(20, 15),
                                height NUMBER,

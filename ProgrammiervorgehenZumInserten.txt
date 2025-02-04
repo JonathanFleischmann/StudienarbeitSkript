@@ -20,3 +20,5 @@ PROBLEM:
 Bei stop_times gehen bei einem trip_id key in der map datensätze verloren, man müsste einen zusammengesetzten Schlüssel machen (trip_id und sequence), aber am besten wäre eine map die afu trip id und sequnece keys hat
 
 Erkenntnis: Rides müssen am Ende zusammen mit den stop_times eingefügt werden, da sie sich nicht immer anhand eigener Werte unterscheiden
+
+exceptions nach rides, werden eig den periods zugewiesen, aber hier über ride_exception
