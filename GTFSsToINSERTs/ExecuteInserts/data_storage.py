@@ -74,6 +74,22 @@ class DatabaseTable:
                 print(f"Der Wert für die Spalte {column} des Datensatzes {record_id} wurde nicht gefunden.", file=sys.stderr)
                 return None
 
+    def get_map_with_column_as_key_and_id_as_value(self, column):
+        """
+        Gibt eine Map zurück, die die Werte einer Spalte als Key hat.
+        :param column: Der Name der Spalte
+        """
+        if column not in self.columns:
+            raise KeyError(f"Die Spalte '{column}' existiert nicht.")
+        column_position = self.columns.index(column)
+        column_values = {}
+        for record_id, record in self.values.items():
+            # Wenn noch kein Wert für den Key existiert, lege ein Array an, ansonsten fügen wir den Wert hinzu
+            if record[column_position] not in column_values:
+                column_values[record[column_position]] = [record_id]
+            else:
+                column_values[record[column_position]].append(record_id)
+        return column_values
 
 
 
@@ -210,7 +226,9 @@ class DatabaseTable:
         start_text = f"INSERT INTO {self.table_name} ({', '.join(self.columns)}) VALUES "
         # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
         for record_id, record in self.values.items():
-            insert_statements.append(f"{start_text}({', '.join([f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == "TEXT" else str(value) for index, value in enumerate(record)])})") 
+            insert_statements.append(
+                f"{start_text}({', '.join([f'NULL' if value in ('', None) else f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == 'TEXT' else str(value) for index, value in enumerate(record)])})"
+            ) 
         return insert_statements
     
     
@@ -219,7 +237,7 @@ class DatabaseTable:
         Generiert die SELECT-Statements für die generierte ID und gibt diese in einer Map mit der record_id als Key zurück.
         """
         select_statements = {}
-        start_text = f"SELECT id FROM {self.table_name} WHERE "
+        start_text = f"SELECT id FROM {self.table_name} WHERE"
         select_statement = ""
 
         # erstelle eine Map, die die Position der Spalten anhand ihrer Namen speichert
@@ -240,7 +258,7 @@ class DatabaseTable:
                     unique_expression += " " + unique_column
                     
                     if unique_column not in self.columns:
-                        unique_expression += "IS NULL"
+                        unique_expression += " IS NULL"
                     elif self.data_types[unique_column] == "TEXT":
                         unique_expression += f" = '{record[column_positions[unique_column]].replace("'", "''")}'"
                     else:

@@ -12,7 +12,7 @@ class GTFSTable:
         """
         self.table_name = table_name
         self.columns = columns  # Array mit den Spaltennamen
-        self.column_values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
+        self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
     
 
     def get_table_name(self):
@@ -28,7 +28,7 @@ class GTFSTable:
         Gibt alle Datensätze in der Map zurück.
         :return: Die Map mit allen Datensätzen
         """
-        return self.column_values
+        return self.values
     
     
     def get_record(self, record_id):
@@ -38,9 +38,9 @@ class GTFSTable:
         :return: Die Werte des Datensatzes
         :raises KeyError: Wenn die ID nicht existiert
         """
-        if record_id not in self.column_values:
+        if record_id not in self.values:
             raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
-        return self.column_values[record_id]
+        return self.values[record_id]
     
 
     def get_distinct_attributes_of_all_records(self, columns):
@@ -52,9 +52,9 @@ class GTFSTable:
             if column not in self.columns:
                 raise KeyError(f"Die Spalte '{column}' existiert nicht in der Tabelle {self.table_name}.")
         if len(columns) == len(self.columns):
-            return self.column_values
+            return self.values
         column_values = {}
-        for record_id, record in self.column_values.items():
+        for record_id, record in self.values.items():
             column_values[record_id] = [record[self.columns.index(column)] for column in columns]
         return column_values
     
@@ -67,16 +67,33 @@ class GTFSTable:
             :return: Der Wert des Attributs
             :raises KeyError: Wenn die ID oder der Attributname nicht existiert
             """
-            if record_id not in self.column_values:
+            if record_id not in self.values:
                 raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
             if attribute_name not in self.columns:
                 raise KeyError(f"Das Attribut '{attribute_name}' existiert nicht.")
             
             # Index des Attributs in den Spaltennamen finden
             index = self.columns.index(attribute_name)
-            return self.column_values[record_id][index]
+            return self.values[record_id][index]
     
-
+    def get_map_with_column_as_key_and_id_as_value(self, column):
+        """
+        Gibt eine Map zurück, die die Werte einer Spalte als Key hat.
+        :param column: Der Name der Spalte
+        """
+        if column not in self.columns:
+            raise KeyError(f"Die Spalte '{column}' existiert nicht.")
+        column_position = self.columns.index(column)
+        column_values = {}
+        for record_id, record in self.values.items():
+            # Wenn noch kein Wert für den Key existiert, lege ein Array an, ansonsten fügen wir den Wert hinzu
+            if record[column_position] == "":
+                continue
+            if record[column_position] not in column_values:
+                column_values[record[column_position]] = [record_id]
+            else:
+                column_values[record[column_position]].append(record_id)
+        return column_values
 
 
 
@@ -91,7 +108,7 @@ class GTFSTable:
         """
         if len(values) != len(self.columns):
             raise ValueError(f"Der Datensatz benötigt {len(self.columns)} Werte, aber {len(values)} wurden angegeben.")
-        self.column_values[record_id] = values
+        self.values[record_id] = values
 
     
     def set_attribute(self, record_id, attribute_name, value):
@@ -102,7 +119,7 @@ class GTFSTable:
         :param value: Der Wert, der gesetzt werden soll
         :raises KeyError: Wenn die ID oder der Attributname nicht existiert
         """
-        if record_id not in self.column_values:
+        if record_id not in self.values:
             raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
         if attribute_name not in self.columns:
             raise KeyError(f"Das Attribut '{attribute_name}' existiert nicht.")
@@ -110,7 +127,7 @@ class GTFSTable:
         # Index des Attributs in den Spaltennamen finden
         index = self.columns.index(attribute_name)
 
-        self.column_values[record_id][index] = value
+        self.values[record_id][index] = value
 
     
     def delete_column(self, column_name):
@@ -128,9 +145,18 @@ class GTFSTable:
         del self.columns[index]
         
         # Wert für jede Zeile in der Map löschen
-        for record_id in self.column_values:
-            del self.column_values[record_id][index]
+        for record_id in self.values:
+            del self.values[record_id][index]
     
+    def delete_record(self, record_id):
+        """
+        Löscht einen Datensatz aus der Map.
+        :param record_id: Die ID des Datensatzes, der gelöscht werden soll
+        :raises KeyError: Wenn die ID nicht existiert
+        """
+        if record_id not in self.values:
+            raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
+        del self.values[record_id]
 
 
 
@@ -139,7 +165,7 @@ class GTFSTable:
         Gibt die Spaltennamen und alle Datensätze in der Map aus.
         """
         print("Spalten:", self.columns)
-        for record_id, values in self.column_values.items():
+        for record_id, values in self.values.items():
             print(record_id, values)
 
 
@@ -156,6 +182,6 @@ class GTFSTable:
             # Schreibe die Spaltennamen in die erste Zeile der CSV-Datei, davor Platz für die ID
             file.write(";" + "; ".join(self.columns) + "\n")
             # Schreibe die Werte der Datensätze in die CSV-Datei
-            for record_id, values in self.column_values.items():
+            for record_id, values in self.values.items():
                 # schreibe die values getrennt durch ein Kommma in die Datei
                 file.write(record_id + ";" + "; ".join(values) + "\n")

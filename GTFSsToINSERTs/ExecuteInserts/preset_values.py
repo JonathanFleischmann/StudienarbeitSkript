@@ -12,7 +12,7 @@ result_values = {
     "traffic_point": ["name", "type", "location_type", "latitute", "longitude", "height", "traffic_centre"],
     "location_type": ["type"],
     "height": ["name", "above_sea_level", "floor"],
-    "traffic_centre": ["name", "traffic_centre_type", "latitute", "longitude"],
+    "traffic_centre": ["name", "type", "latitute", "longitude"],
     "traffic_centre_type": ["type"]
 }
 

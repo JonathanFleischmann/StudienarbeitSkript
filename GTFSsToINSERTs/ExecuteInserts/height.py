@@ -1,73 +1,49 @@
-# import os
-# import sys
-
-# from ExecuteInserts.file_read import clean_and_split_line
-# from ExecuteInserts.data_storage import DatabaseTable
-# from Skripts.GTFSsToINSERTs.ExecuteInserts.core import get_value_position_map_from_array, shorten_values_to_relevant
-# from ExecuteInserts.preset_values import height_attribute_names_replace_map
+import sys
+from ExecuteInserts.data_storage import DatabaseTable
 
 
-# def generate_height_table_object_from_filepath(filepath):
-#     """
-#     Diese Funktion liest die angegebene Datei und schreibt die Daten in ein Table-Objekt mit der id als key.
-    
-#     filepath: Der Dateipfad zur .txt-Datei.
-#     """
-#     try:
-#         # Öffne die Datei im Lesemodus
-#         with open(filepath, "r", encoding="utf-8-sig") as file:
+def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
+    """
+    Diese Funktion bildet die GTFS-Tabelle agency auf die Datenbank-Tabelle agency ab.
+    """
 
-#             # Lese die Namen der Spaltennamen in der ersten Zeile der txt-Datei in ein Array ein
-#             columns = clean_and_split_line(file.readline())
+    # Finde heraus, welche Spalten in der DatabaseTabelle agency vorhanden sein werden anhand der GTFSTabelle
+    gtfs_table_columns = levels_gtfs_table.get_columns()
+    database_table_columns = []
 
-#             # erstelle eine Map, die angibt, wo die relevanten Spalten in der txt-Datei liegen
-#             # und überprüfe, ob alle notwendigen Werte vorhanden sind
-#             attribute_position = shorten_values_to_relevant(
-#                 get_value_position_map_from_array(columns), 
-#                 "levels"
-#             )
 
-#             # finde den Index der id-Spalte
+    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
+    used_columns = []
+    for column in gtfs_table_columns:
+        if column == "level_name":
+            database_table_columns.append("name")
+            used_columns.append(column)
+        elif column == "elevation":
+            database_table_columns.append("above_sea_level")
+            used_columns.append(column)
+        elif column == "level_index":
+            database_table_columns.append("floor")
+            used_columns.append(column)
+        else:
+            print(f"Die Spalte {column} in der GTFS-Tabelle levels wurde nicht erwartet", file=sys.stderr)
+            sys.exit(1)
 
-#             id_position = -1
-#             # gehe jedes Element in der Map durch und finde das, welches "agency_id" lautet
-#             for attribute in attribute_position:
-#                 if "level_id" in attribute:
-#                     id_position = attribute_position[attribute]
-#                     del attribute_position[attribute]
-#                     break
-            
-#             if id_position == -1:
-#                 print("Die id-Spalte \"level_id\" wurde nicht gefunden.", file=sys.stderr)
-#                 sys.exit(1)
+    # Erstelle ein DatabaseTable-Objekt für die Tabelle agency
+    height_database_table = DatabaseTable("height", database_table_columns)
 
-#             # Ersetze die Attributnamen in der Map durch die Namen, unter denen sie in der Datenbank gespeichert werden
-#             new_attributes_position = {}
-#             for attribute in attribute_position:
-#                 if attribute in height_attribute_names_replace_map:
-#                     # trage in der neuen Map die Position unter dem richhtigen Namen ein
-#                     new_attributes_position[height_attribute_names_replace_map[attribute]] = attribute_position[attribute]
-#                 else:
-#                     print(f"Das Attribut {attribute} wurde nicht in height_attribute_names_replace_map gefunden.", file=sys.stderr)
-#                     sys.exit(1)
-#             attribute_position = new_attributes_position
+    height_database_table.add_unique_columns(["name", "above_sea_level", "floor"])
 
-#             # Erstelle ein Table-Objekt, das die Daten speichert
-#             table = DatabaseTable(list(attribute_position))
+    # Füge die Datensätze der GTFS-Tabelle agency in die Datenbanktabelle ein
+    height_database_table.set_all_values(
+        levels_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+    )
 
-#             # Gehe alle Zeilen in der txt-Datei ab der zweiten Zeile durch
-#             for line in file:
-#                 # Bereinige die Zeile und teile sie in Werte auf
-#                 values = clean_and_split_line(line)
+    height_database_table.set_data_types(
+        {
+            "name": "TEXT",
+            "above_sea_level": "INTEGER",
+            "floor": "INTEGER"
+        }
+    )
 
-#                 # Schreibe die relevanten Werte in das Table-Objekt mit der id als key
-#                 id = values[id_position]
-#                 relevant_values = []
-#                 for attribute in attribute_position:
-#                     relevant_values.append(values[attribute_position[attribute]])
-#                 table.add_record(id, relevant_values)
-
-#             return table
-    
-#     except Exception as e:
-#         print(f"Fehler beim Verarbeiten der Datei {filepath}: {e}", file=sys.stderr)
+    return height_database_table
