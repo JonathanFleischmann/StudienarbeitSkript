@@ -8,6 +8,8 @@ class DatabaseTable:
     # table_name speichert den Namen der Tabelle
     # columns speichert die Spaltennamen
     # values speichert die tatächlichen Werte mit dem Index der Zeile als Key
+    # data_types speichert die Datentypen der Spalten
+    # unique_columns_list speichert die Kombinationen von Spalten, die unique sind
 
 
     def __init__(self, table_name, columns, foreign_key_name=None):
@@ -15,26 +17,25 @@ class DatabaseTable:
         Konstruktor, der die Spaltennamen initialisiert und die Map für die Datensätze erstellt.
         :param columns: Liste der Spaltennamen (Array)
         """
-        self.foreign_key_name = foreign_key_name # Name des Fremdschlüssels der durch diese Tabelle selektiert werden kann -> nur für Foreign-References
         self.table_name = table_name
         self.columns = columns  # Array mit den Spaltennamen
         self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
-        self.foreign_references = {} # Map mit Foreign_Reference-Objekten, key ist der Name des Fremdschlüssels        
         self.data_types = {} # Map mit den Datentypen der Spalten
         self.unique_columns_list = [] # Array mit Kombinationen von Spalten, die unique zusammen unique sind
 
-    def get_foreign_key_name(self):
-        return self.foreign_key_name
 
     def get_table_name(self):
         return self.table_name
     
+    
     def get_columns(self):
         return self.columns
     
+
     def get_all_records(self):
         return self.values
     
+
     def get_record(self, record_id):
         """
         Gibt die Werte eines Datensatzes zurück.
@@ -45,6 +46,7 @@ class DatabaseTable:
             raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
         return self.values[record_id]
     
+
     def get_distinct_attributes_of_all_records(self, columns):
         """
         Gibt die Werte der angegebenen Spalte als Map mit der ID des Datensatzes als Key zurück.
@@ -58,6 +60,7 @@ class DatabaseTable:
             column_values[record_id] = [record[self.columns.index(column)] for column in columns]
         return column_values
 
+
     def get_value(self, record_id, column):
             """
             Gibt den Wert eines Attributs eines Datensatzes zurück.
@@ -70,8 +73,19 @@ class DatabaseTable:
             except KeyError: 
                 print(f"Der Wert für die Spalte {column} des Datensatzes {record_id} wurde nicht gefunden.", file=sys.stderr)
                 return None
-    
 
+
+
+
+
+
+
+    def set_all_values(self, values):
+        """
+        Setzt die Werte der Spalten für die gesamte Tabelle.
+        :param column_values: Map mit den Werten der Spalten
+        """
+        self.values = values
 
 
     def set_data_types(self, data_types):
@@ -81,6 +95,7 @@ class DatabaseTable:
         """
         self.data_types = data_types
     
+
     def add_column(self, column_name):
         """
         Fügt eine Spalte in die Map ein, wenn sie noch nicht existiert.
@@ -89,6 +104,7 @@ class DatabaseTable:
         if column_name in self.columns:
             raise KeyError(f"Die Spalte '{column_name}' existiert bereits.")
         self.columns.append(column_name)
+
 
     def add_unique_columns(self, unique_columns):
         """
@@ -100,15 +116,6 @@ class DatabaseTable:
                 raise KeyError(f"Die Kombination der Spalten {unique_columns} ist bereits als unique definiert.")
         self.unique_columns_list.append(unique_columns)
 
-    def set_foreign_key_name(self, foreign_key_name):
-        self.foreign_key_name = foreign_key_name
-
-    def set_all_values(self, values):
-        """
-        Setzt die Werte der Spalten für die gesamte Tabelle.
-        :param column_values: Map mit den Werten der Spalten
-        """
-        self.values = values
 
     def add_record(self, record_id, values):
         """
@@ -120,6 +127,7 @@ class DatabaseTable:
             raise ValueError(f"Der Datensatz benötigt {len(self.columns)} Werte, aber {len(values)} wurden angegeben.")
         self.values[record_id] = values
     
+
     def set_value(self, record_id, attribute_name, value):
         """
         Setzt den Wert eines Attributs eines Datensatzes.
@@ -140,6 +148,7 @@ class DatabaseTable:
         else:
             self.values[record_id][index] = value
 
+
     def apply_map_function_to_column(self, column_name, map):
         """
         Wendet eine Map-Funktion auf eine Spalte an.
@@ -153,36 +162,6 @@ class DatabaseTable:
             self.values[record_id][colum_index] = map(record[colum_index])
 
 
-
-
-
-
-    def add_foreign_reference(self, table_name, foreign_key_name, columns):
-        if foreign_key_name in self.foreign_references:
-            print(f"Der Fremdschlüssel {foreign_key_name} wurde bereits hinzugefügt.", file=sys.stderr)
-        else:
-            self.foreign_references[foreign_key_name] = DatabaseTable(table_name, columns, foreign_key_name)
-
-
-    def add_complete_foreign_reference(self, foreign_reference):
-        if foreign_reference.get_foreign_key_name() in self.foreign_references:
-            print(f"Der Fremdschlüssel {foreign_reference.get_foreign_key_name()} wurde bereits hinzugefügt.", file=sys.stderr)
-        else:
-            self.foreign_references[foreign_reference.get_foreign_key_name()] = foreign_reference
-
-
-    def add_foreign_reference_record(self, record_id, foreign_key_name, values):
-        try:
-            if foreign_key_name in self.foreign_references:
-                self.foreign_references[foreign_key_name].add_record(record_id, values)
-            else:
-                print(f"Der Fremdschlüssel-Select für {foreign_key_name} wurde nicht gefunden.", file=sys.stderr)
-        except Exception as e:
-            print(f"Fehler beim Hinzufügen des Fremdschlüssels {foreign_key_name} für Datensatz {record_id}: {e}", file=sys.stderr)
-
-
-
-    
     def delete_column(self, column_name):
         """
         Löscht eine Spalte aus der Map und den Spaltennamen.
@@ -200,15 +179,11 @@ class DatabaseTable:
         for record_id in self.values:
             del self.values[record_id][index]
 
-
-
-
-    # def get_all_foreign_references_for_one_record(self, record_id):
-    #     foreign_references = {}
-    #     for foreign_key_name in self.foreign_references:
-    #         foreign_references[foreign_key_name] = self.foreign_references[foreign_key_name].get_distinct_values(record_id)
-    #     return foreign_references
     
+
+
+
+
     def write_to_csv(self):
         '''
         Schreibt die Daten in eine CSV-Datei
@@ -220,24 +195,11 @@ class DatabaseTable:
             pass
         with open("CSVsFromObject/" + self.table_name + '.csv', "w", encoding="utf-8") as file:
             # Schreibe die Spaltennamen in die erste Zeile der CSV-Datei, davor Platz für die ID
-            file.write(";" + "; ".join(self.columns))
-            # Schreibe die Informationen über die Foreign-References in die gleiche Zeile
-            for foreign_key_name in self.foreign_references:
-                file.write("; " + foreign_key_name + " :")
-                for column in self.foreign_references[foreign_key_name].get_columns():
-                    file.write(";" + self.foreign_references[foreign_key_name].get_table_name() + "." + column)
-            file.write("\n")
+            file.write(";" + "; ".join(self.columns) + "\n")
             # Schreibe die Werte der Datensätze in die CSV-Datei
             for record_id, values in self.values.items():
                 # schreibe die values getrennt durch ein Kommma in die Datei
-                file.write(record_id + ";" + "; ".join(get_str_array(values)))
-                # Schreibe die Werte der Foreign-References in die gleiche Zeile
-                for foreign_key_name in self.foreign_references:
-                    file.write(";")
-                    for value in self.foreign_references[foreign_key_name].get_record(record_id):
-                        file.write(";" + get_str(value))
-                file.write("\n")
-
+                file.write(record_id + ";" + "; ".join(get_str_array(values)) + "\n")
 
 
     def generate_inserts(self):
@@ -248,18 +210,9 @@ class DatabaseTable:
         start_text = f"INSERT INTO {self.table_name} ({', '.join(self.columns)}) VALUES "
         # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
         for record_id, record in self.values.items():
-            # insert_statement = start_text + "("
-            # for index, value in enumerate(record):
-            #     if self.data_types[self.columns[index]] == "TEXT":
-            #         insert_statement += "'" + value.replace("'", "''") + "'"
-            #     else:
-            #         insert_statement += str(value)
-            #     if index < len(record) - 1:
-            #         insert_statement += ", "
-            # insert_statement += ")"
-            # insert_statements.append(insert_statement)
             insert_statements.append(f"{start_text}({', '.join([f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == "TEXT" else str(value) for index, value in enumerate(record)])})") 
         return insert_statements
+    
     
     def generate_selects(self):
         """
@@ -309,8 +262,6 @@ class DatabaseTable:
         '''
         gibt eine Kopie des DatabaseTable-Objekts zurück
         '''
-        copy = DatabaseTable(self.table_name, self.columns.copy(), self.foreign_key_name)
+        copy = DatabaseTable(self.table_name, self.columns.copy())
         copy.set_all_values(self.values.copy())
-        for foreign_key_name in self.foreign_references:
-            copy.add_complete_foreign_reference(self.foreign_references[foreign_key_name].copy())
         return copy
