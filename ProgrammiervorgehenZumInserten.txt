@@ -8,7 +8,7 @@ Mit Agency Table angefangen:
 
 TODO:
 
-im Nachhinein über ein weiteres Skript erkennen, ob Wiederholungen bei den rides vorhanden sind und auflösen
+im Nachhinein über ein weiteres Skript erkennen, ob Wiederholungen bei den rides vorhanden sind und auflösen (anhand von z.B. Abfahrtszeit erste Station und ID erste Station
 
 im Nachhinein beim EInfügen der stop_times, wenn es bei den Trips mehrere gleiche Varianten (gleiches headsign) mit unterschiedlicher direction_id gibt dann neue Variante mit umgekehrten stop_times hinzufügen, wenn es bereits zwei gibt (mit unterschiedlichen Headsigns), dann Richtung bei entsprechendem umkehren
 
@@ -18,3 +18,5 @@ vllt. im Nachhinein headsign auf Basis der Stops ergänzen
 PROBLEM:
 
 Bei stop_times gehen bei einem trip_id key in der map datensätze verloren, man müsste einen zusammengesetzten Schlüssel machen (trip_id und sequence), aber am besten wäre eine map die afu trip id und sequnece keys hat
+
+Erkenntnis: Rides müssen am Ende zusammen mit den stop_times eingefügt werden, da sie sich nicht immer anhand eigener Werte unterscheiden
