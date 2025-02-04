@@ -84,36 +84,6 @@ class GTFSTable:
         """
         return self.column_values
     
-    def get_all_records_without_distinct_attributes(self, distinct_attributes):
-        """
-        Gibt alle Datensätze in der Map zurück, ohne die spezifizierten Attribute.
-        :param distinct_attributes: Liste der Attribute, die nicht zurückgegeben werden sollen
-        :return: Die Map mit allen Datensätzen
-        """
-
-        for distinct_attribute in distinct_attributes:
-            if distinct_attribute not in self.columns:
-                raise KeyError(f"Das Attribut '{distinct_attribute}' existiert nicht im GTFS-Datensatz {self.table_name}. Es konte dementsprechend nicht entfernt werden.")
-
-        records = {}
-        distinct_attributes_positions = [self.columns.index(distinct_attribute) for distinct_attribute in distinct_attributes]
-        for record_id, values in self.column_values.items():
-            records[record_id] = []
-            for i in range(len(values)):
-                if i not in distinct_attributes_positions:
-                    records[record_id].append(values[i])
-
-        # records = self.column_values.copy()
-        # attributes = self.columns.copy()
-        # for attribute in distinct_attributes:
-        #     index = attributes.index(attribute)
-        #     for record_id in records:
-        #         if index >= len(records[record_id]):
-        #             print(index, records[record_id])
-        #         del records[record_id][index]
-        #     del attributes[index]
-        return records
-    
     def get_distinct_attributes_of_all_records(self, columns):
         """
         Gibt die Werte der angegebenen Spalte als Map mit der ID des Datensatzes als Key zurück.
@@ -122,6 +92,8 @@ class GTFSTable:
         for column in columns:
             if column not in self.columns:
                 raise KeyError(f"Die Spalte '{column}' existiert nicht in der Tabelle {self.table_name}.")
+        if len(columns) == len(self.columns):
+            return self.column_values
         column_values = {}
         for record_id, record in self.column_values.items():
             column_values[record_id] = [record[self.columns.index(column)] for column in columns]

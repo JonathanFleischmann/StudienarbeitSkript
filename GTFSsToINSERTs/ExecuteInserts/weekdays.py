@@ -43,7 +43,9 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
     weekdays_database_table.add_unique_columns(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"])
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
-    weekdays_database_table.set_all_values(calendar_gtfs_table.get_all_records_without_distinct_attributes(["start_date", "end_date"]))
+    weekdays_database_table.set_all_values(
+        calendar_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+    )
 
     weekdays_database_table.set_data_types(
         {

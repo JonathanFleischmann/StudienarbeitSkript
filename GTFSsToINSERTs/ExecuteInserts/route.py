@@ -46,7 +46,9 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
     route_database_table = DatabaseTable("route", database_table_columns)
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
-    route_database_table.set_all_values(routes_gtfs_table.get_all_records())
+    route_database_table.set_all_values(
+        routes_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+    )
 
     route_database_table.add_unique_columns(["name", "agency"])
     route_database_table.add_unique_columns(["short_name", "agency"])

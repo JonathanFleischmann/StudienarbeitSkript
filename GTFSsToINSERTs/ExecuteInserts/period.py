@@ -38,7 +38,7 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     period_database_table.set_all_values(
-        calendar_gtfs_table.get_distinct_attributes_of_all_records(["start_date", "end_date"])
+        calendar_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
     )
 
     # Füge die Spalte für die Foreign-Keys auf die weekdays hinzu

@@ -29,8 +29,6 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
             sys.exit(1)
     
 
-        
-
     # Überprüfe 
     for necessary_value, found in necessary_values_found.items():
         if not found:
@@ -43,7 +41,9 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
     agency_database_table.add_unique_columns(["name"])
 
     # Füge die Datensätze der GTFS-Tabelle agency in die Datenbanktabelle ein
-    agency_database_table.set_all_values(agency_gtfs_table.get_all_records())
+    agency_database_table.set_all_values(
+        agency_gtfs_table.get_distinct_attributes_of_all_records(database_table_columns)
+    )
 
     agency_database_table.set_data_types(
         {
