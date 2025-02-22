@@ -52,10 +52,13 @@ class GTFSTable:
             if column not in self.columns:
                 raise KeyError(f"Die Spalte '{column}' existiert nicht in der Tabelle {self.table_name}.")
         if len(columns) == len(self.columns):
-            return self.values
+            return copy.deepcopy(self.values)
         column_values = {}
         for record_id, record in self.values.items():
-            column_values[record_id] = [record[self.columns.index(column)] for column in columns]
+            for column in columns:
+                if record_id not in column_values:
+                    column_values[record_id] = []
+                column_values[record_id].append(copy.deepcopy(record[self.columns.index(column)]))
         return column_values
     
 
