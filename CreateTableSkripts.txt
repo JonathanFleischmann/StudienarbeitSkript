@@ -41,8 +41,6 @@ CREATE TABLE agency (
                         language VARCHAR2(50)
 );
 
-drop table agency cascade constraints;
-
 CREATE TABLE route (
                        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                        name VARCHAR2(100) NOT NULL,
@@ -51,11 +49,8 @@ CREATE TABLE route (
                        description VARCHAR2(400),
                        agency NUMBER NOT NULL,
                        CONSTRAINT unique_name_in_agency UNIQUE (name, agency),
-                       CONSTRAINT unique_short_name_in_agency UNIQUE (short_name, agency),
                        CONSTRAINT fk_agency FOREIGN KEY (agency) REFERENCES agency(id) ON DELETE CASCADE
 );
-
-drop table route cascade constraints;
 
 CREATE TABLE weekdays (
                           id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -89,7 +84,8 @@ CREATE TABLE ride (
                       route NUMBER NOT NULL,
                       period NUMBER NOT NULL,
 		      headsign VARCHAR2(200),
-                      CONSTRAINT unique_ride UNIQUE (route, period, trip_headsign),
+		      start_time TIMESTAMP NOT NULL,
+                      unique_ride UNIQUE (route, period, start_time),
                       CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
                       CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
 );
@@ -161,12 +157,12 @@ CREATE TABLE path (
                       walk_type NUMBER,
                       ride NUMBER,
                       start_point INTEGER NOT NULL,
-                      departure_time TIMESTAMP WITH TIME ZONE,
+                      departure_time TIMESTAMP,
                       enter_type INTEGER,
                       end_point INTEGER NOT NULL,
-                      arrival_time TIMESTAMP WITH TIME ZONE,
+                      arrival_time TIMESTAMP,
                       descend_type INTEGER,
-		      CONSTRAINT unique_path UNIQUE (start_point, end_point, is_ride, walk_type, ride),
+		      CONSTRAINT unique_path UNIQUE (start_point, end_point, walk_type, departure_time, arrival_time),
                       CONSTRAINT fk_walk_type FOREIGN KEY (walk_type) REFERENCES walk_type(id),
                       CONSTRAINT fk_ride_in_path FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
                       CONSTRAINT fk_start_point FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
