@@ -21,7 +21,7 @@ class DatabaseTable:
         self.columns = columns  # Array mit den Spaltennamen
         self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
         self.data_types = {} # Map mit den Datentypen der Spalten
-        self.unique_columns_list = [] # Array mit Kombinationen von Spalten, die unique zusammen unique sind
+        self.unique_columns_list = [] # Array mit den Spalten, die zusammen unique sind
 
 
     def get_table_name(self):
@@ -31,6 +31,13 @@ class DatabaseTable:
     def get_columns(self):
         return self.columns
     
+    def get_unique_colums_sorted(self):
+        sorted_unique_columns = []
+        for column in self.columns:
+            if column in self.unique_columns_list:
+                sorted_unique_columns.append(column)
+        return sorted_unique_columns
+        
 
     def get_all_records(self):
         return self.values
@@ -122,15 +129,14 @@ class DatabaseTable:
         self.columns.append(column_name)
 
 
-    def add_unique_columns(self, unique_columns):
+    def add_unique_column(self, unique_column):
         """
-        fügt eine neue Kombination von Spalten hinzu, die unique sind
-        :param unique_columns: Array mit den Spaltennamen, die gemeinsam unique sind
+        fügt eine neue Spalte hinzu, die in Kombination mit den anderen Spalten unique sein muss
+        :param unique_column: Spaltenname, der hinzugefügt werden soll
         """
-        for unique_columns_element in self.unique_columns_list:
-            if set(unique_columns_element) == set(unique_columns):
-                raise KeyError(f"Die Kombination der Spalten {unique_columns} ist bereits als unique definiert.")
-        self.unique_columns_list.append(unique_columns)
+        if unique_column in self.unique_columns_list:
+            raise KeyError(f"Die Spalte {unique_column} ist bereits als unique in der Tabelle {self.table_name} definiert.")
+        self.unique_columns_list.append(unique_column)
 
 
     def add_record(self, record_id, values):

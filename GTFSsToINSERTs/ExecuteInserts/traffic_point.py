@@ -59,7 +59,8 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
     traffic_point_database_table = DatabaseTable("traffic_point", database_table_columns)
 
-    traffic_point_database_table.add_unique_columns(["latitude", "longitude"])
+    traffic_point_database_table.add_unique_column("latitude")
+    traffic_point_database_table.add_unique_column("longitude")
 
     traffic_point_database_table.set_data_types(
         {

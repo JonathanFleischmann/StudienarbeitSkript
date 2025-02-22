@@ -50,8 +50,11 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
         print(f"Es wurden keine Verknüpfungen zu Verkehrsknotenpunkten gefunden", file=sys.stderr)
         
         traffic_centre_database_table = DatabaseTable("traffic_centre", database_table_columns)
-
-        traffic_centre_database_table.add_unique_columns(["name", "latitude", "longitude", "location_type"])
+        
+        traffic_centre_database_table.add_unique_column("name")
+        traffic_centre_database_table.add_unique_column("latitude")
+        traffic_centre_database_table.add_unique_column("longitude")
+        traffic_centre_database_table.add_unique_column("location_type")
 
         traffic_centre_database_table.set_data_types(
             {
@@ -75,7 +78,10 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
     traffic_centre_database_table = DatabaseTable("traffic_centre", database_table_columns)
 
-    traffic_centre_database_table.add_unique_columns(["name", "latitude", "longitude", "location_type"])
+    traffic_centre_database_table.add_unique_column("name")
+    traffic_centre_database_table.add_unique_column("latitude")
+    traffic_centre_database_table.add_unique_column("longitude")
+    traffic_centre_database_table.add_unique_column("location_type")
 
     traffic_centre_database_table.set_data_types(
         {

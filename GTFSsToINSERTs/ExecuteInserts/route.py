@@ -56,8 +56,8 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
         routes_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
     )
 
-    route_database_table.add_unique_columns(["name", "agency"])
-    route_database_table.add_unique_columns(["short_name", "agency"])
+    route_database_table.add_unique_column("name")
+    route_database_table.add_unique_column("agency")
 
     route_database_table.set_data_types(
         {

@@ -4,7 +4,7 @@ def generate_location_type_database_table():
 
     location_type_database_table = DatabaseTable("location_type", ["type"])
 
-    location_type_database_table.add_unique_columns(["type"])
+    location_type_database_table.add_unique_column("type")
 
     location_type_database_table.set_all_values(
         {

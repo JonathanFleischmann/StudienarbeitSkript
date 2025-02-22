@@ -53,7 +53,9 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         trips_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
     )
 
-    ride_database_table.add_unique_columns(["route", "period", "headsign"])
+    ride_database_table.add_unique_column("route")
+    ride_database_table.add_unique_column("period")
+    ride_database_table.add_unique_column("start_time")
 
     ride_database_table.set_data_types(
         {

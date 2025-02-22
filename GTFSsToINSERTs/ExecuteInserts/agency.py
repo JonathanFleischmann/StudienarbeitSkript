@@ -51,9 +51,9 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
 
     agency_database_table.set_data_types(
         {
-            "name": "TEXT",
-            "url": "TEXT",
-            "language": "TEXT"
+            "name": DatatypeEnum.TEXT,
+            "url": DatatypeEnum.TEXT,
+            "language": DatatypeEnum.TEXT
         }
     )
 

@@ -31,7 +31,9 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
     # Erstelle ein DatabaseTable-Objekt für die Tabelle agency
     height_database_table = DatabaseTable("height", database_table_columns)
 
-    height_database_table.add_unique_columns(["name", "above_sea_level", "floor"])
+    height_database_table.add_unique_column("name")
+    height_database_table.add_unique_column("above_sea_level")
+    height_database_table.add_unique_column("floor")
 
     # Füge die Datensätze der GTFS-Tabelle agency in die Datenbanktabelle ein
     height_database_table.set_all_values(
