@@ -1,4 +1,5 @@
 import os
+import copy
 
 class GTFSTable:
     # table_name speichert den Namen des gtfs-Files
@@ -78,6 +79,19 @@ class GTFSTable:
             # Index des Attributs in den Spaltennamen finden
             index = self.columns.index(attribute_name)
             return self.values[record_id][index]
+
+
+    def get_record_ids_start_like(self, string_value):
+        """
+        Gibt die IDs zurück, die mit einem bestimmten String beginnen.
+        :param string_value: Der String, mit dem die IDs beginnen sollen
+        """
+        record_ids = []
+        for record_id in self.values:
+            if record_id.startswith(string_value):
+                record_ids.append(record_id)
+        return record_ids
+
     
     def get_map_with_column_as_key_and_id_as_value(self, column):
         """
