@@ -2,7 +2,7 @@ import os
 import sys
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
-from ExecuteInserts.core import get_str_array, get_str
+from ExecuteInserts.core import get_str_array, get_str, map_to_date, map_to_datetime
 
 
 class DatabaseTable:
@@ -58,7 +58,7 @@ class DatabaseTable:
     def get_distinct_attributes_of_all_records(self, columns):
         """
         Gibt die Werte der angegebenen Spalte als Map mit der ID des Datensatzes als Key zurück.
-        :param column: Der Name der Spalte
+        :param columns: Liste der Spaltennamen
         """
         for column in columns:
             if column not in self.columns:
@@ -166,7 +166,7 @@ class DatabaseTable:
         # Index des Attributs in den Spaltennamen finden
         index = self.columns.index(attribute_name)
 
-        if index == len(self.values[record_id]):
+        if index >= len(self.values[record_id]):
             self.values[record_id].append(value)
         else:
             self.values[record_id][index] = value
