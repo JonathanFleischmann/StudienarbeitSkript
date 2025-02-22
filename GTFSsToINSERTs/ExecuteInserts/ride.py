@@ -3,7 +3,7 @@ from ExecuteInserts.data_storage import DatabaseTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
-def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_database_table, route_database_table):
+def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_database_table, route_database_table, stop_times_gtfs_table):
     """
     Diese Funktion 
     """
@@ -79,5 +79,33 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         period_new_id = period_id_map[period[0]][0]
         ride_database_table.set_value(record_id, "period", period_new_id)
 
+    # überprüfe, ob die Spalten "stop_sequence", "trip_id" und "departure_time" in der GTFS-Tabelle stop_times vorhanden sind
+    stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
+    headsign_found = False
+    if "stop_sequence" not in stop_times_gtfs_table_columns:
+        print("Die Spalte 'stop_sequence' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
+        sys.exit(1)
+    if "departure_time" not in stop_times_gtfs_table_columns:
+        print("Die Spalte 'departure_time' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
+        sys.exit(1)
+    if "stop_headsign" in stop_times_gtfs_table_columns:
+        headsign_found = True
+
+    # Füge die Spalte "departure_time" zur Datenbanktabelle hinzu
+    ride_database_table.add_column("start_time")
+
+    # Weise jedem Ride die Startzeit hinzu
+    for trip_id, record in ride_database_table.get_all_records().items():
+        start_stop_time = trip_id + "1"
+        start_time = stop_times_gtfs_table.get_attribute(start_stop_time, "departure_time")
+        ride_database_table.set_value(trip_id, "start_time", start_time)
+
+    if headsign_found:
+        ride_database_table.add_column("headsign")
+        # Weise jedem Ride den headsign hinzu
+        for trip_id, record in ride_database_table.get_all_records().items():
+            start_stop_time = trip_id + "1"
+            headsign = stop_times_gtfs_table.get_attribute(start_stop_time, "stop_headsign")
+            ride_database_table.set_value(trip_id, "headsign", headsign)
 
     return ride_database_table
