@@ -1,4 +1,5 @@
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 def generate_location_type_database_table():
 
@@ -18,7 +19,7 @@ def generate_location_type_database_table():
     
     location_type_database_table.set_data_types(
         {
-            "type": "TEXT"
+            "type": DatatypeEnum.TEXT
         }
     )
 

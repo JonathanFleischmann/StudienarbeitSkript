@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_database_table):
@@ -61,11 +62,11 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
 
     route_database_table.set_data_types(
         {
-            "name": "TEXT",
-            "short_name": "TEXT",
-            "type": "TEXT",
-            "description": "TEXT", 
-            "agency": "INTEGER"
+            "name": DatatypeEnum.TEXT,
+            "short_name": DatatypeEnum.TEXT,
+            "type": DatatypeEnum.TEXT,
+            "description": DatatypeEnum.TEXT, 
+            "agency": DatatypeEnum.INTEGER
         }
     )
 

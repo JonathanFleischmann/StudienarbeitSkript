@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_database_table, route_database_table):
@@ -59,9 +60,10 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
 
     ride_database_table.set_data_types(
         {
-            "route": "INTEGER",
-            "period": "INTEGER",
-            "headsign": "TEXT"
+            "route": DatatypeEnum.INTEGER,
+            "period": DatatypeEnum.INTEGER,
+            "headsign": DatatypeEnum.TEXT,
+            "start_time": DatatypeEnum.TIME
         }
     )
 

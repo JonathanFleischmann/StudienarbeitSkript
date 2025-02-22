@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table, traffic_centre_database_table, location_type_database_table, height_database_table):
@@ -64,12 +65,12 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
 
     traffic_point_database_table.set_data_types(
         {
-            "name": "TEXT",
-            "latitude": "FLOAT",
-            "longitude": "FLOAT",
-            "location_type": "INTEGER",
-            "traffic_centre": "INTEGER",
-            "height": "INTEGER"
+            "name": DatatypeEnum.TEXT,
+            "latitude": DatatypeEnum.FLOAT,
+            "longitude": DatatypeEnum.FLOAT,
+            "location_type": DatatypeEnum.INTEGER,
+            "traffic_centre": DatatypeEnum.INTEGER,
+            "height": DatatypeEnum.INTEGER
         }
     )
 

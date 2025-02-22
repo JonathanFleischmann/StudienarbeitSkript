@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_from_stops(stops_gtfs_table, stop_times_gtfs_table, location_type_database_table):
@@ -58,10 +59,10 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
 
         traffic_centre_database_table.set_data_types(
             {
-                "name": "TEXT",
-                "latitude": "FLOAT",
-                "longitude": "FLOAT",
-                "location_type": "INTEGER"
+                "name": DatatypeEnum.TEXT,
+                "latitude": DatatypeEnum.FLOAT,
+                "longitude": DatatypeEnum.FLOAT,
+                "location_type": DatatypeEnum.INTEGER
             }
         )
 
@@ -85,10 +86,10 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
 
     traffic_centre_database_table.set_data_types(
         {
-            "name": "TEXT",
-            "latitude": "FLOAT",
-            "longitude": "FLOAT",
-            "location_type": "INTEGER"
+            "name": DatatypeEnum.TEXT,
+            "latitude": DatatypeEnum.FLOAT,
+            "longitude": DatatypeEnum.FLOAT,
+            "location_type": DatatypeEnum.INTEGER
         }
     )
 

@@ -1,5 +1,6 @@
 import os
 import sys
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 from ExecuteInserts.core import get_str_array, get_str
 
@@ -233,7 +234,7 @@ class DatabaseTable:
         # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
         for record_id, record in self.values.items():
             insert_statements.append(
-                f"{start_text}({', '.join([f'NULL' if value in ('', None) else f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == 'TEXT' else str(value) for index, value in enumerate(record)])})"
+                f"{start_text}({', '.join([f'NULL' if value in ('', None) else f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == DatatypeEnum.TEXT else str(value) for index, value in enumerate(record)])})"
             ) 
         return insert_statements
     
@@ -265,8 +266,11 @@ class DatabaseTable:
                     
                     if unique_column not in self.columns:
                         unique_expression += " IS NULL"
-                    elif self.data_types[unique_column] == "TEXT":
-                        unique_expression += f" = '{record[column_positions[unique_column]].replace("'", "''")}'"
+                    elif self.data_types[unique_column] == DatatypeEnum.TEXT:
+                        if record[column_positions[unique_column]] == '':
+                            unique_expression += " IS NULL"
+                        else:
+                            unique_expression += f" = '{record[column_positions[unique_column]].replace("'", "''")}'"
                     else:
                         unique_expression += " = " + str(record[column_positions[unique_column]])
                     if index < len(unique_columns) - 1:

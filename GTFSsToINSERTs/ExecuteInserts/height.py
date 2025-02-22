@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
@@ -42,9 +43,9 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
 
     height_database_table.set_data_types(
         {
-            "name": "TEXT",
-            "above_sea_level": "INTEGER",
-            "floor": "INTEGER"
+            "name": DatatypeEnum.TEXT,
+            "above_sea_level": DatatypeEnum.INTEGER,
+            "floor": DatatypeEnum.INTEGER
         }
     )
 

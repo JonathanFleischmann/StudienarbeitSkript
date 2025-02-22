@@ -1,6 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
-from ExecuteInserts.core import map_to_oracle_date
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays_database_table):
@@ -56,9 +56,9 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
 
     period_database_table.set_data_types(
         {
-            "start_date": "DATE",
-            "end_date": "DATE",
-            "weekdays": "INTEGER"
+            "start_date": DatatypeEnum.DATE,
+            "end_date": DatatypeEnum.DATE,
+            "weekdays": DatatypeEnum.INTEGER
         }
     )
 

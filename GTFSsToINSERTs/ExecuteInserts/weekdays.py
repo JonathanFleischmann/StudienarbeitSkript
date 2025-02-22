@@ -1,5 +1,6 @@
 import sys
 from ExecuteInserts.data_storage import DatabaseTable
+from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
 def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
@@ -57,13 +58,13 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
 
     weekdays_database_table.set_data_types(
         {
-            "monday": "INTEGER",
-            "tuesday": "INTEGER",
-            "wednesday": "INTEGER",
-            "thursday": "INTEGER",
-            "friday": "INTEGER",
-            "saturday": "INTEGER",
-            "sunday": "INTEGER"
+            "monday": DatatypeEnum.INTEGER,
+            "tuesday": DatatypeEnum.INTEGER,
+            "wednesday": DatatypeEnum.INTEGER,
+            "thursday": DatatypeEnum.INTEGER,
+            "friday": DatatypeEnum.INTEGER,
+            "saturday": DatatypeEnum.INTEGER,
+            "sunday": DatatypeEnum.INTEGER
         }
     )
 
