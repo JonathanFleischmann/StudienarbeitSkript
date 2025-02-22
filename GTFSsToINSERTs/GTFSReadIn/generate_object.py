@@ -27,16 +27,22 @@ def generate_table_object_from_filepath(filepath, filename):
 
             # finde den Index der id-Spalte
 
-            id_position = -1
-            # gehe jedes Element in der Map durch und finde das, welches "agency_id" lautet
+            id_positions = []
+            # gehe jedes Element in der Map durch und suche die id-Spalte(n)
+            id_array = get_id_name_from_filename(filename)
             for attribute in attribute_position:
-                if get_id_name_from_filename(filename) in attribute:
-                    id_position = attribute_position[attribute]
-                    del attribute_position[attribute]
-                    break
+                if len(id_array) <= 1:
+                    if id_array[0] == attribute:
+                        id_positions.append(attribute_position[attribute])
+                        del attribute_position[attribute]
+                        break
+                else:
+                    for id_name in id_array:
+                        if id_name in attribute:
+                            id_positions.append(attribute_position[attribute])
             
-            if id_position == -1:
-                print("Die id-Spalte \"" + get_id_name_from_filename(filename) + "\" wurde nicht gefunden.", file=sys.stderr)
+            if len(id_positions) == 0:	
+                print("Die id-Spalten \"" + id_array + "\" wurden nicht gefunden.", file=sys.stderr)
                 sys.exit(1)
 
             # Erstelle ein Table-Objekt, das die Daten speichert
@@ -48,7 +54,9 @@ def generate_table_object_from_filepath(filepath, filename):
                 values = clean_and_split_line(line)
 
                 # Schreibe die relevanten Werte in das Table-Objekt mit der id als key
-                id = values[id_position]
+                id = ""
+                for id_position in id_positions:
+                    id += str(values[id_position])
                 relevant_values = []
                 for attribute in attribute_position:
                     relevant_values.append(values[attribute_position[attribute]])
