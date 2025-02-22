@@ -238,6 +238,70 @@ class DatabaseTable:
             ) 
         return insert_statements
     
+
+    def generate_inserts_array(self):
+        """
+        Diese Funktion gibt die Tupel für die INSERT-Statements zurück.
+        Beispiel: [(1, 'Test', 13), (2, 'Test2', 14)]
+        """
+        insert_tuples = []
+        # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
+        for record_id, record in self.values.items():
+            new_tuple = tuple()
+            for index, value in enumerate(record):
+                if value in ('', None):
+                    new_tuple += (None,)
+                elif self.data_types[self.columns[index]] == DatatypeEnum.TEXT:
+                    new_tuple += (value.replace("'", "").replace('"', ''),)
+                elif self.data_types[self.columns[index]] == DatatypeEnum.INTEGER:
+                    new_tuple += (int(value),)
+                elif self.data_types[self.columns[index]] == DatatypeEnum.FLOAT:
+                    new_tuple += (float(value),)
+                elif self.data_types[self.columns[index]] == DatatypeEnum.DATE:
+                    new_tuple += (map_to_date(value),)
+                elif self.data_types[self.columns[index]] == DatatypeEnum.TIME:
+                    new_tuple += (map_to_datetime(value),)
+                else:
+                    new_tuple += (value,)
+            insert_tuples.append(new_tuple)
+        return insert_tuples
+    
+    def generate_selects_map(self):
+        """
+        Diese Funktion gibt eine Map zurück, die die record_id als Key hat und die unique_columns in einem tuple als Value.
+        Beispiel: {"23112432": (1, 'Test', 13), "31242341": (2, 'Test2', 14)}
+        """
+        # generiere eine map, die jedem Index zuordnet, ob der Wert in der Spalte unique ist
+        unique_columns_map = {}
+        for index, column in enumerate(self.columns):
+            if column in self.unique_columns_list:
+                unique_columns_map[index] = True
+            else:
+                unique_columns_map[index] = False
+
+        select_map = {}
+        # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
+        for record_id, record in self.values.items():
+            new_tuple = tuple()
+            for index, value in enumerate(record):
+                if unique_columns_map[index]:
+                    if value in ('', None):
+                        new_tuple += (None,)
+                    elif self.data_types[self.columns[index]] == DatatypeEnum.TEXT:
+                        new_tuple += (value.replace("'", "").replace('"', ''),)
+                    elif self.data_types[self.columns[index]] == DatatypeEnum.INTEGER:
+                        new_tuple += (int(value),)
+                    elif self.data_types[self.columns[index]] == DatatypeEnum.FLOAT:
+                        new_tuple += (float(value),)
+                    elif self.data_types[self.columns[index]] == DatatypeEnum.DATE:
+                        new_tuple += (map_to_date(value),)
+                    elif self.data_types[self.columns[index]] == DatatypeEnum.TIME:
+                        new_tuple += (map_to_datetime(value),)
+                    else:
+                        new_tuple += (value,)
+            select_map[record_id] = new_tuple
+        return select_map
+
     
     def generate_selects(self):
         """
