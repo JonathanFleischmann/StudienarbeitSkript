@@ -9,6 +9,7 @@ from ExecuteInserts.traffic_centre import generate_traffic_centre_database_table
 from ExecuteInserts.traffic_point import generate_traffic_point_database_table_from_stops_gtfs_table
 from ExecuteInserts.exception_table import generate_exception_table_database_table_from_gtfs_table
 from ExecuteInserts.ride_exception import generate_ride_exception_database_table_from_gtfs_tables
+from ExecuteInserts.walk_type import generate_walk_type_database_table
 
 from ExecuteInserts.db_executions import do_inserts, select_generated_ids
 
@@ -115,3 +116,11 @@ def execute_inserts(gtfs_table_map, conn):
     ride_exception_database_table = generate_ride_exception_database_table_from_gtfs_tables(exception_table_database_table, ride_database_table, gtfs_table_map["trips"], gtfs_table_map["calendar_dates"])
 
     do_inserts(ride_exception_database_table, conn)
+
+
+
+    walk_type_database_table = generate_walk_type_database_table()
+
+    do_inserts(walk_type_database_table, conn)
+
+    select_generated_ids(walk_type_database_table, conn)
