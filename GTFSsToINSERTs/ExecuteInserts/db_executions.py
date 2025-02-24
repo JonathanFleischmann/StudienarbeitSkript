@@ -4,7 +4,7 @@ import os
 import time
 from ExecuteInserts.data_storage import DatabaseTable
     
-def do_inserts(db_table, conn, batch_size=50):
+def do_inserts(db_table, conn, batch_size=30):
     """
     Führt die Inserts für eine Tabelle durch und schreibt Fehlermeldungen sowie erfolgreiche Inserts in eine Datei.
     
@@ -165,7 +165,7 @@ def select_generated_ids(db_table, conn):
                 for record_id, id_value in id_map.items():
                     db_table.set_value(record_id, "id", id_value)
                 log.write(f"\n✅ {success_count} IDs erfolgreich ermittelt.\n")
-                print(f"\t✅ IDs für Tabelle {db_table.get_table_name()} erfolgrich ermittelt.\n")
+                print(f"\t✅ IDs für Tabelle {db_table.get_table_name()} erfolgreich ermittelt.\n")
             else:
                 log.write(f"\nDas ist das Ergebnis aus der Datenbankabfrage: {tuple_id_map}\n")
                 log.write(f"\n✅ {success_count} IDs erfolgreich ermittelt.\n")
