@@ -1,5 +1,0 @@
-walk_type
-
-stop_type
-
-path
