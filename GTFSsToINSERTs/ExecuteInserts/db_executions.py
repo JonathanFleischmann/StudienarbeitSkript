@@ -4,7 +4,7 @@ import os
 import time
 from ExecuteInserts.data_storage import DatabaseTable
     
-def do_inserts(db_table, conn, batch_size=30):
+def do_inserts(db_table, conn, batch_size):
     """
     Führt die Inserts für eine Tabelle durch und schreibt Fehlermeldungen sowie erfolgreiche Inserts in eine Datei.
     

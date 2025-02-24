@@ -1,0 +1,11 @@
+{
+    "database": {
+        "host": "localhost",
+        "port": 1521,
+        "service-name": "XEPDB1",
+        "username": "C##Benutzer",
+        "password": "saqvizsanqoxsizRe9"
+    },
+    "input_directory": "C:/Users/jonif/Desktop/Studienarbeit/Verkehrsdaten/GTFSDatensaetze/gtfs_j24",
+    "batch_size": 30
+}

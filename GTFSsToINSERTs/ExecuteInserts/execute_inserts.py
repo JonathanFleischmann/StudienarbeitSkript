@@ -18,7 +18,7 @@ from ExecuteInserts.db_executions import do_inserts, select_generated_ids
 
 
 
-def execute_inserts(gtfs_table_map, conn):
+def execute_inserts(gtfs_table_map, conn, batch_size=100):
     """
     Diese Funktion bildet die eingelesenen GTFS-Tabellen auf die Datenbank-Tabellen ab.
     Dabei werden die Fremdschlüssel aufgelöst auf Secundary-Keys der Fremdschlüsseltabelle abgebildet
@@ -29,7 +29,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     agency_database_table = generate_agency_database_table_from_gtfs_table(gtfs_table_map["agency"])
 
-    do_inserts(agency_database_table, conn)
+    do_inserts(agency_database_table, conn, batch_size)
 
     select_generated_ids(agency_database_table, conn)
 
@@ -37,7 +37,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     route_database_table = generate_route_database_table_from_gtfs_table(gtfs_table_map["routes"], agency_database_table)
 
-    do_inserts(route_database_table, conn)
+    do_inserts(route_database_table, conn, batch_size)
 
     select_generated_ids(route_database_table, conn)
 
@@ -45,7 +45,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     weekdays_database_table = generate_weekdays_database_table_from_gtfs_table(gtfs_table_map["calendar"])
 
-    do_inserts(weekdays_database_table, conn)
+    do_inserts(weekdays_database_table, conn, batch_size)
 
     select_generated_ids(weekdays_database_table, conn)
 
@@ -53,7 +53,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     period_database_table = generate_period_database_table_from_gtfs_table(gtfs_table_map["calendar"], weekdays_database_table)
     
-    do_inserts(period_database_table, conn)
+    do_inserts(period_database_table, conn, batch_size)
 
     select_generated_ids(period_database_table, conn)
 
@@ -65,7 +65,7 @@ def execute_inserts(gtfs_table_map, conn):
 
         height_database_table = generate_height_database_table_from_gtfs_table(gtfs_table_map["levels"])
 
-        do_inserts(height_database_table, conn)
+        do_inserts(height_database_table, conn, batch_size)
 
         select_generated_ids(height_database_table, conn)
 
@@ -77,7 +77,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     location_type_database_table = generate_location_type_database_table()
 
-    do_inserts(location_type_database_table, conn)
+    do_inserts(location_type_database_table, conn, batch_size)
 
     select_generated_ids(location_type_database_table, conn)
         
@@ -85,7 +85,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     traffic_centre_database_table = generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_from_stops(gtfs_table_map["stops"], gtfs_table_map["stop_times"], location_type_database_table)
 
-    do_inserts(traffic_centre_database_table, conn)
+    do_inserts(traffic_centre_database_table, conn, batch_size)
 
     select_generated_ids(traffic_centre_database_table, conn)
 
@@ -93,7 +93,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     traffic_point_database_table = generate_traffic_point_database_table_from_stops_gtfs_table(gtfs_table_map["stops"], traffic_centre_database_table, location_type_database_table, height_database_table)
 
-    do_inserts(traffic_point_database_table, conn)
+    do_inserts(traffic_point_database_table, conn, batch_size)
 
     select_generated_ids(traffic_point_database_table, conn)
 
@@ -101,7 +101,7 @@ def execute_inserts(gtfs_table_map, conn):
     
     ride_database_table = generate_ride_database_table_from_gtfs_tables(gtfs_table_map["trips"], period_database_table, route_database_table, gtfs_table_map["stop_times"])
 
-    do_inserts(ride_database_table, conn)
+    do_inserts(ride_database_table, conn, batch_size)
 
     select_generated_ids(ride_database_table, conn)
 
@@ -109,7 +109,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     exception_table_database_table = generate_exception_table_database_table_from_gtfs_table(gtfs_table_map["calendar_dates"])
     
-    do_inserts(exception_table_database_table, conn)
+    do_inserts(exception_table_database_table, conn, batch_size)
 
     select_generated_ids(exception_table_database_table, conn)
 
@@ -117,13 +117,13 @@ def execute_inserts(gtfs_table_map, conn):
 
     ride_exception_database_table = generate_ride_exception_database_table_from_gtfs_tables(exception_table_database_table, ride_database_table, gtfs_table_map["trips"], gtfs_table_map["calendar_dates"])
 
-    do_inserts(ride_exception_database_table, conn)
+    do_inserts(ride_exception_database_table, conn, batch_size)
 
 
 
     walk_type_database_table = generate_walk_type_database_table()
 
-    do_inserts(walk_type_database_table, conn)
+    do_inserts(walk_type_database_table, conn, batch_size)
 
     select_generated_ids(walk_type_database_table, conn)
 
@@ -131,7 +131,7 @@ def execute_inserts(gtfs_table_map, conn):
 
     stop_type_database_table = generate_stop_type_database_table()
 
-    do_inserts(stop_type_database_table, conn)
+    do_inserts(stop_type_database_table, conn, batch_size)
 
     select_generated_ids(stop_type_database_table, conn)
 
@@ -140,4 +140,4 @@ def execute_inserts(gtfs_table_map, conn):
 
     path_database_table = generate_path_database_table_from_gtfs_tables(gtfs_table_map["stop_times"], pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table)
 
-    do_inserts(path_database_table, conn)
+    do_inserts(path_database_table, conn, batch_size)
