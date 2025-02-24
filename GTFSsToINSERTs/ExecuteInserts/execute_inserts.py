@@ -11,6 +11,7 @@ from ExecuteInserts.exception_table import generate_exception_table_database_tab
 from ExecuteInserts.ride_exception import generate_ride_exception_database_table_from_gtfs_tables
 from ExecuteInserts.walk_type import generate_walk_type_database_table
 from ExecuteInserts.stop_type import generate_stop_type_database_table
+from ExecuteInserts.path import generate_path_database_table_from_gtfs_tables
 
 from ExecuteInserts.db_executions import do_inserts, select_generated_ids
 
@@ -133,3 +134,10 @@ def execute_inserts(gtfs_table_map, conn):
     do_inserts(stop_type_database_table, conn)
 
     select_generated_ids(stop_type_database_table, conn)
+
+
+    pathways_gtfs_table = gtfs_table_map["pathways"] if "pathways" in gtfs_table_map else None
+
+    path_database_table = generate_path_database_table_from_gtfs_tables(gtfs_table_map["stop_times"], pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table)
+
+    do_inserts(path_database_table, conn)
