@@ -100,4 +100,52 @@ def map_to_datetime(timestamp_str: str) -> datetime:
         return datetime.strptime(timestamp_str, '%H:%M:%S')
 
     except Exception as e:
-        return f"Fehler: {str(e)}"    
+        return f"Fehler: {str(e)}"  
+
+
+def get_minute_difference(first_point_in_time: str, second_point_in_time: str) -> int:
+    """
+    Berechnet die Differenz in Minuten zwischen zwei Uhrzeiten im Format 'HH:MM:SS'.
+
+    :param time1: Erster Zeitstempel als String im Format "HH:MM:SS"
+    :param time2: Zweiter Zeitstempel als String im Format "HH:MM:SS"
+    :return: Differenz in Minuten (maximal 1440 Minuten)
+    """
+    try:
+        # Überprüfung: Muss 8 Zeichen lang sein
+        if len(first_point_in_time) != 8 or len(second_point_in_time) != 8:
+            raise ValueError("Der Zeitstempel muss im Format 'HH:MM:SS' sein.")
+        
+        # Berechne die Differenz in Minuten
+        first_point_in_time: datetime = datetime.strptime(first_point_in_time, '%H:%M:%S')
+        second_point_in_time: datetime = datetime.strptime(second_point_in_time, '%H:%M:%S')
+        if first_point_in_time > second_point_in_time:
+            second_point_in_time = second_point_in_time.replace(day=second_point_in_time.day + 1)
+        return (second_point_in_time - first_point_in_time).seconds // 60
+    
+    except Exception as e:
+        return f"Fehler beim Ausrechnen eines Zeitunterschieds: {str(e)}"
+    
+
+def get_time_when_more_than_24_h(time: str) -> str:
+    """
+    Gibt bei Uhrzeiten im Format 'HH:MM:SS' die Zeit zurück, die über 24 Stunden hinausgeht,
+    wenn die Uhrzeit mehr als 24 Stunden beträgt.
+
+    :param time: Zeitstempel als String im Format "HH:MM:SS"
+    """
+    try:
+        # Überprüfung: Muss 8 Zeichen lang sein
+        if len(time) != 8:
+            raise ValueError("Der Zeitstempel muss im Format 'HH:MM:SS' sein.")
+        
+        # Wenn über 24 Stunden hinausgegangen wird, wird wieder bei 00:00:00 begonnen
+        if int(time[:2]) >= 24:
+            hours = str(int(time[:2]) % 24)
+            if len(hours) == 1:
+                hours = "0" + hours
+            time = hours + time[2:]
+        return time
+    
+    except Exception as e:
+        return f"Fehler beim Ausrechnen einer Zeit: {str(e)}"
