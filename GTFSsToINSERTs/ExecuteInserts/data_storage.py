@@ -51,7 +51,7 @@ class DatabaseTable:
         :return: Die Werte des Datensatzes
         """
         if record_id not in self.values:
-            raise KeyError(f"Kein Datensatz mit ID {record_id} gefunden.")
+            return None
         return self.values[record_id]
     
 
@@ -98,6 +98,12 @@ class DatabaseTable:
             else:
                 column_values[record[column_position]].append(record_id)
         return column_values
+    
+    def get_record_number(self):
+        """
+        Gibt die Anzahl der Datensätze zurück.
+        """
+        return len(self.values)
 
 
 
