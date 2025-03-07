@@ -176,6 +176,11 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     entry.grid(row=row, column=1, padx=10, pady=5, sticky=tk.EW)
     return entry
 
+def create_frame(parent, text, row, columnspan, padding_x : int, padding_y : int, _sticky=tk.EW, _column = 0) -> ttk.LabelFrame:
+    frame = ttk.LabelFrame(parent, text=text, padding=(padding_x, padding_y))
+    frame.grid(row=row, column=_column, columnspan=columnspan, padx=10, pady=3, sticky=_sticky)
+    return frame
+
 def start_user_interface(callback):
     global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread
     running_thread = None
@@ -186,14 +191,15 @@ def start_user_interface(callback):
 
     # Hauptfenster erstellen
     root.title("gtfs2OracleDB")
-    root.geometry("1587x743")
+    root.geometry("1587x764")
 
     # Validierungsfunktion für Ganzzahlen
     vcmd = (root.register(validate_int_input), '%P')
 
     # Gesamtframe für Eingaben
-    input_frame = ttk.LabelFrame(root, text="Eingabe", padding=(4, 1))
-    input_frame.grid(row=0, column=0, columnspan=1, padx=10, pady=0, sticky=tk.EW)
+    # input_frame = ttk.LabelFrame(root, text="Eingabe", padding=(4, 1))
+    # input_frame.grid(row=0, column=0, columnspan=1, padx=10, pady=0, sticky=tk.EW)
+    input_frame = create_frame(root, "Eingabe", 0, 1, 4, 1)
 
     # Frame für Datenbankkonfiguration
     db_config_frame = ttk.LabelFrame(input_frame, text="OracleDB Konfiguration", padding=(10, 10))
@@ -207,8 +213,9 @@ def start_user_interface(callback):
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
     # Frame für GTFS-Pfad
-    gtfs_path_frame = ttk.LabelFrame(input_frame, text="Dateipfad zu GTFS-Dateien", padding=(10, 10))
-    gtfs_path_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
+    # gtfs_path_frame = ttk.LabelFrame(input_frame, text="Dateipfad zu GTFS-Dateien", padding=(10, 10))
+    # gtfs_path_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
+    gtfs_path_frame = create_frame(input_frame, "Dateipfad zu GTFS-Dateien", 1, 2, 10, 10)
 
     gtfs_path = ttk.Entry(gtfs_path_frame)
     gtfs_path.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
@@ -217,12 +224,14 @@ def start_user_interface(callback):
     select_gtfs_path_button.grid(row=0, column=1, padx=10, pady=10)
 
     # Frame für Batch-Size
-    batch_size_frame = ttk.LabelFrame(input_frame, text="Batch-Größe", padding=(10, 10))
-    batch_size_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
+    # batch_size_frame = ttk.LabelFrame(input_frame, text="Batch-Größe", padding=(10, 10))
+    # batch_size_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
+    batch_size_frame = create_frame(input_frame, "Batch-Größe", 2, 2, 10, 10)
 
-    ttk.Label(batch_size_frame, text="Batch-Size:").grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
-    batch_size = ttk.Entry(batch_size_frame, validate="key", validatecommand=vcmd)
-    batch_size.grid(row=2, column=1, padx=10, pady=5, sticky=tk.EW)
+    # ttk.Label(batch_size_frame, text="Batch-Size:").grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
+    # batch_size = ttk.Entry(batch_size_frame, validate="key", validatecommand=vcmd)
+    # batch_size.grid(row=2, column=1, padx=10, pady=5, sticky=tk.EW)
+    batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Buttons
     create_config_button = ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config)
@@ -238,15 +247,16 @@ def start_user_interface(callback):
     submit_button.grid(row=4, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben
-    console_frame = ttk.LabelFrame(root, text="Konsolenausgaben", padding=(4, 10))
-    console_frame.grid(row=0, column=2, columnspan=2, padx=10, pady=10, sticky=tk.NSEW)
+    # console_frame = ttk.LabelFrame(root, text="Konsolenausgaben", padding=(4, 10))
+    # console_frame.grid(row=0, column=2, columnspan=2, padx=10, pady=10, sticky=tk.NSEW)
+    console_frame = create_frame(root, "Konsolenausgaben", 0, 2, 4, 10, _sticky=tk.NSEW, _column=2)
 
     # Scrollbar hinzufügen
     console_scrollbar = ttk.Scrollbar(console_frame)
     console_scrollbar.grid(row=0, column=1, sticky=tk.NS)
 
     # Textfeld für Konsolenausgaben
-    console_text = tk.Text(console_frame, height=42, width=140, state="disabled", bg="#e8f5e9", yscrollcommand=console_scrollbar.set)
+    console_text = tk.Text(console_frame, height=42, width=140, state="disabled", bg="#f7f7f7", yscrollcommand=console_scrollbar.set)
     console_text.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
 
     console_scrollbar.config(command=console_text.yview)
@@ -254,7 +264,7 @@ def start_user_interface(callback):
     # Checkbox für automatischen Bildlauf
     auto_scroll_var = tk.BooleanVar(value=True)
     auto_scroll_checkbox = ttk.Checkbutton(console_frame, text="Automatisch scrollen", variable=auto_scroll_var)
-    auto_scroll_checkbox.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+    auto_scroll_checkbox.grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
 
     # Umleitung der Standardausgabe
     sys.stdout = TextRedirector(console_text, "stdout", auto_scroll_var)
