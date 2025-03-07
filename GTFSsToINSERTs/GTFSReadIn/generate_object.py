@@ -4,8 +4,7 @@ from GTFSReadIn.file_read import clean_and_split_line
 from GTFSReadIn.data_storage import GTFSTable
 from GTFSReadIn.control import get_value_position_map_from_array, shorten_values_to_relevant, get_id_name_from_filename
 
-
-def generate_table_object_from_filepath(filepath, filename):
+def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
     """
     Diese Funktion liest die angegebene Datei und schreibt die Daten in ein Table-Objekt mit der id als key.
     
@@ -49,7 +48,10 @@ def generate_table_object_from_filepath(filepath, filename):
             table = GTFSTable(list(attribute_position), filename)
 
             # Gehe alle Zeilen in der txt-Datei ab der zweiten Zeile durch
+            linecount = 0
             for line in file:
+                if linecount % 1000 == 0 and stop_thread_var.get(): return
+
                 # Bereinige die Zeile und teile sie in Werte auf
                 values = clean_and_split_line(line)
 
@@ -62,6 +64,7 @@ def generate_table_object_from_filepath(filepath, filename):
                     relevant_values.append(values[attribute_position[attribute]])
                 table.add_record(id, relevant_values)
 
+                linecount += 1
             return table
     
     except Exception as e:

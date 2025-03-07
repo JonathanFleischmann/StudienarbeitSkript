@@ -1,17 +1,104 @@
 import tkinter as tk
+import threading
 from tkinter import messagebox, filedialog
 from tkinter import ttk
+import sys
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
 
-def on_submit():
-    if validate_entries():
-        root.quit()
+class TextRedirector(object):
+    def __init__(self, widget, tag="stdout"):
+        self.widget = widget
+        self.tag = tag
+        self.auto_scroll = True
 
-def on_cancel():
+        # Bind the <Enter> event to detect when the user scrolls
+        self.widget.bind("<Enter>", self.on_enter)
+        self.widget.bind("<Leave>", self.on_leave)
+        self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
+
+    def on_enter(self, event):
+        self.auto_scroll = False
+
+    def on_leave(self, event):
+        self.auto_scroll = True
+
+    def on_mouse_wheel(self, event):
+        # Check if the user has scrolled up
+        if self.widget.yview()[1] < 1.0:
+            self.auto_scroll = False
+        else:
+            self.auto_scroll = True
+
+    def write(self, str):
+        self.widget.configure(state="normal")
+        if '\r' in str:
+            self.remove_last_lines_with_content(2)
+            str = str.replace('\r', '')
+        self.widget.insert("end", str, (self.tag,))
+        self.widget.configure(state="disabled")
+
+        # Only scroll to the end if the user is at the bottom
+        if self.widget.yview()[1] == 1.0:
+            self.widget.see("end")
+
+    def flush(self):
+        pass
+
+    def remove_last_lines_with_content(self, num_lines):
+        # Get the index of the last line with content
+        last_line_index = self.widget.index("end-1c linestart")
+        # Remove all following empty lines
+        while self.widget.get("end-2c", "end-1c") == "\n":
+            self.widget.delete("end-2c", "end-1c")
+        # Delete the last num_lines lines with content
+        for _ in range(num_lines):
+            last_line_index = self.widget.index("end-1c linestart")
+            self.widget.delete(last_line_index, "end-1c")
+
+def on_submit(callback, stop_thread_var):
+    global running_thread
+    if running_thread and running_thread.is_alive():
+        print("Operation läuft bereits...")
+        return
+    if validate_entries():
+        # Starte die Callback-Methode in einem eigenen Thread
+        thread = threading.Thread(target=lambda: callback(
+            db_host.get(), 
+            db_port.get(), 
+            db_service_name.get(), 
+            db_username.get(), 
+            db_password.get(), 
+            gtfs_path.get(), 
+            int(batch_size.get()),
+            stop_thread_var
+        ), daemon=True)
+        thread.start()
+        running_thread = thread
+
+def stop_callback(root, stop_thread_var):
+    if running_thread and running_thread.is_alive():
+        print("Operation abbrechen...")
+        stop_thread_var.set(True)
+        check_thread(root, stop_thread_var)
+        # running_thread.join()  # Warte, bis der Thread beendet ist
+        # print("Operation abgebrochen")
+        # multi_threading.stop_thread = False  # Setze das Event zurück
+        # print("Operation abgebrochen")
+    else:
+        print("Kein laufender Thread")
+
+def check_thread(root, stop_thread_var):
+    """Überprüft, ob der Thread beendet ist, ohne die GUI zu blockieren"""
+    if running_thread.is_alive():
+        root.after(200, lambda: check_thread(root, stop_thread_var))  # In 100ms erneut prüfen
+    else:
+        print("Operation abgebrochen")
+        stop_thread_var.set(False)
+
+def on_cancel(root, stop_thread_var):
+    stop_callback(root, stop_thread_var)
     root.quit()
-    global cancel
-    cancel = True
 
 def validate_entries():
     if not db_host.get():
@@ -70,21 +157,28 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     entry.grid(row=row, column=1, padx=10, pady=5, sticky=tk.EW)
     return entry
 
-def start_user_interface():
-    global root, db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, cancel
-    cancel = False
+def start_user_interface(callback):
+    global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread
+    running_thread = None
+
+    root = tk.Tk()
+
+    stop_thread_var = tk.BooleanVar(value=False)
 
     # Hauptfenster erstellen
-    root = tk.Tk()
     root.title("gtfs2OracleDB")
-    root.geometry("362x558")
+    root.geometry("1587x743")
 
     # Validierungsfunktion für Ganzzahlen
     vcmd = (root.register(validate_int_input), '%P')
 
+    # Gesamtframe für Eingaben
+    input_frame = ttk.LabelFrame(root, text="Eingabe", padding=(4, 1))
+    input_frame.grid(row=0, column=0, columnspan=1, padx=10, pady=0, sticky=tk.EW)
+
     # Frame für Datenbankkonfiguration
-    db_config_frame = ttk.LabelFrame(root, text="OracleDB Konfiguration", padding=(10, 10))
-    db_config_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky=tk.EW)
+    db_config_frame = ttk.LabelFrame(input_frame, text="OracleDB Konfiguration", padding=(10, 10))
+    db_config_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
 
     # Labels und Eingabefelder für Datenbankkonfiguration
     db_host = create_label_entry(db_config_frame, "Host:", 0)
@@ -94,8 +188,8 @@ def start_user_interface():
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
     # Frame für GTFS-Pfad
-    gtfs_path_frame = ttk.LabelFrame(root, text="Dateipfad zu GTFS-Dateien", padding=(10, 10))
-    gtfs_path_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky=tk.EW)
+    gtfs_path_frame = ttk.LabelFrame(input_frame, text="Dateipfad zu GTFS-Dateien", padding=(10, 10))
+    gtfs_path_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
 
     gtfs_path = ttk.Entry(gtfs_path_frame)
     gtfs_path.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
@@ -104,47 +198,52 @@ def start_user_interface():
     select_gtfs_path_button.grid(row=0, column=1, padx=10, pady=10)
 
     # Frame für Batch-Size
-    batch_size_frame = ttk.LabelFrame(root, text="Batch-Größe", padding=(10, 10))
-    batch_size_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky=tk.EW)
+    batch_size_frame = ttk.LabelFrame(input_frame, text="Batch-Größe", padding=(10, 10))
+    batch_size_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
 
     ttk.Label(batch_size_frame, text="Batch-Size:").grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
     batch_size = ttk.Entry(batch_size_frame, validate="key", validatecommand=vcmd)
     batch_size.grid(row=2, column=1, padx=10, pady=5, sticky=tk.EW)
 
     # Buttons
-    create_config_button = ttk.Button(root, text="Konfigurationsdatei erstellen", command=create_config)
+    create_config_button = ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config)
     create_config_button.grid(row=3, column=0, padx=10, pady=10)
 
-    select_config_button = ttk.Button(root, text="Konfigurationsdatei laden", command=load_config_to_fields)
+    select_config_button = ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields)
     select_config_button.grid(row=3, column=1, padx=10, pady=10)
 
-    cancel_button = ttk.Button(root, text="Abbrechen", command=on_cancel, style="Red.TButton")
+    cancel_button = ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_callback(root, stop_thread_var), style="Red.TButton")
     cancel_button.grid(row=4, column=0, padx=10, pady=10)
 
-    submit_button = ttk.Button(root, text="Bestätigen", command=on_submit,  style="Green.TButton")
+    submit_button = ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton")
     submit_button.grid(row=4, column=1, padx=10, pady=10)
+
+    # Frame für Konsolenausgaben
+    console_frame = ttk.LabelFrame(root, text="Konsolenausgaben", padding=(4, 10))
+    console_frame.grid(row=0, column=2, columnspan=2, padx=10, pady=10, sticky=tk.NSEW)
+
+    # Scrollbar hinzufügen
+    console_scrollbar = ttk.Scrollbar(console_frame)
+    console_scrollbar.grid(row=0, column=1, sticky=tk.NS)
+
+    # Textfeld für Konsolenausgaben
+    console_text = tk.Text(console_frame, height=42, width=140, state="disabled", bg="#e8f5e9", yscrollcommand=console_scrollbar.set)
+    console_text.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
+
+    console_scrollbar.config(command=console_text.yview)
+
+    # Umleitung der Standardausgabe
+    sys.stdout = TextRedirector(console_text, "stdout")
+    sys.stderr = TextRedirector(console_text, "stderr")
 
     style = get_style()
 
     # Verhalten beim Schließen des Fensters definieren
-    root.protocol("WM_DELETE_WINDOW", on_cancel)
+    root.protocol("WM_DELETE_WINDOW", lambda: on_cancel(root, stop_thread_var))
 
     # Hauptschleife starten
     root.mainloop()
 
-    if cancel:
-        return None
-
-    # Rückgabe der Eingabewerte als Objekt
-    return {
-        "username": db_username.get(),
-        "password": db_password.get(),
-        "host": db_host.get(),
-        "port": db_port.get(),
-        "service_name": db_service_name.get(),
-        "gtfs_path": gtfs_path.get(),
-        "batch_size": batch_size.get()
-    }
 
 def get_style():
     style = ttk.Style()

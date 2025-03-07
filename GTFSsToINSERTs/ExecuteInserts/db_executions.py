@@ -4,7 +4,7 @@ import os
 import time
 from ExecuteInserts.data_storage import DatabaseTable
     
-def do_inserts(db_table, conn, batch_size):
+def do_inserts(db_table, conn, batch_size, stop_thread_var):
     """
     Führt die Inserts für eine Tabelle durch und schreibt Fehlermeldungen sowie erfolgreiche Inserts in eine Datei.
     
@@ -27,6 +27,8 @@ def do_inserts(db_table, conn, batch_size):
 
         print(f"\n➕ Starte {total_inserts} Inserts für Tabelle {db_table.get_table_name()}...")
 
+        print(f"  Fortschritt: 0%")
+
         insert_sql = f"INSERT INTO {db_table.get_table_name()} ({', '.join(db_table.get_columns())}) VALUES ({', '.join([':' + str(i+1) for i in range(len(db_table.get_columns()))])})"
 
         batch_errors = []
@@ -37,6 +39,8 @@ def do_inserts(db_table, conn, batch_size):
 
          # In Batches verarbeiten
         for i in range(0, total_inserts, batch_size):
+            if stop_thread_var.get(): return
+
             batch = inserts[i:i + batch_size]
 
             try:
@@ -97,6 +101,7 @@ def do_inserts(db_table, conn, batch_size):
         if batch_errors:
             with open(f"logs/" + db_table.get_table_name() + "/inserts_error_file.txt", "w", encoding="utf-8") as error_log:
                 for rownum, error_msg, failed_insert in batch_errors:
+                    if stop_thread_var.get(): return
                     error_log.write(f"❌ FEHLER in Zeile {rownum}: {error_msg}\n  ➝ SQL: {failed_insert}\n")
 
         cur.close()
@@ -108,7 +113,7 @@ def do_inserts(db_table, conn, batch_size):
 
 
 
-def select_generated_ids(db_table, conn):
+def select_generated_ids(db_table, conn, batch_size, stop_thread_var):
     """
     Führt ein SELECT auf die Tabelle des db_table-Objekts aus, bei dem sie alle unique Werte und die dazugehörigen IDs erhält.
     Dann werden für die IDs aus dem Table-Objekt die zugehörigen IDs aus der DB mithilfe der unique Werte gefunden.
@@ -151,6 +156,7 @@ def select_generated_ids(db_table, conn):
             selects_map = db_table.generate_selects_map()
 
             for record_id, select in selects_map.items():
+                if stop_thread_var.get(): return
 
                 generated_id = tuple_id_map.get(select, 'id not found')
                 if generated_id != 'id not found':
@@ -163,6 +169,7 @@ def select_generated_ids(db_table, conn):
             if failure_count == 0:
                 db_table.add_column("id")
                 for record_id, id_value in id_map.items():
+                    if stop_thread_var.get(): return
                     db_table.set_value(record_id, "id", id_value)
                 log.write(f"\n✅ {success_count} IDs erfolgreich ermittelt.\n")
                 print(f"\t✅ IDs für Tabelle {db_table.get_table_name()} erfolgreich ermittelt.\n")
