@@ -190,7 +190,7 @@ def start_user_interface(callback):
     stop_thread_var = tk.BooleanVar(value=False)
 
     # Hauptfenster erstellen
-    root.title("gtfs2OracleDB")
+    root.title("gtfsToOracleDB")
     root.geometry("1587x764")
 
     # Validierungsfunktion für Ganzzahlen
