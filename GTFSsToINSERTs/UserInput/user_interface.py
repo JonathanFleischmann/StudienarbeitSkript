@@ -81,6 +81,11 @@ def on_submit(callback, stop_thread_var):
         print("Operation läuft bereits...")
         return
     if validate_entries():
+        # Leere die Konsolenausgabe
+        console_text.configure(state="normal")
+        console_text.delete(1.0, tk.END)
+        console_text.configure(state="disabled")
+
         # Starte die Callback-Methode in einem eigenen Thread
         thread = threading.Thread(target=lambda: callback(
             db_host.get(), 
@@ -100,10 +105,6 @@ def stop_callback(root, stop_thread_var):
         print("Operation abbrechen...")
         stop_thread_var.set(True)
         check_thread(root, stop_thread_var)
-        # running_thread.join()  # Warte, bis der Thread beendet ist
-        # print("Operation abgebrochen")
-        # multi_threading.stop_thread = False  # Setze das Event zurück
-        # print("Operation abgebrochen")
     else:
         print("Kein laufender Thread")
 
@@ -182,7 +183,7 @@ def create_frame(parent, text, row, columnspan, padding_x : int, padding_y : int
     return frame
 
 def start_user_interface(callback):
-    global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread
+    global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread, console_text
     running_thread = None
 
     root = tk.Tk()
@@ -197,8 +198,6 @@ def start_user_interface(callback):
     vcmd = (root.register(validate_int_input), '%P')
 
     # Gesamtframe für Eingaben
-    # input_frame = ttk.LabelFrame(root, text="Eingabe", padding=(4, 1))
-    # input_frame.grid(row=0, column=0, columnspan=1, padx=10, pady=0, sticky=tk.EW)
     input_frame = create_frame(root, "Eingabe", 0, 1, 4, 1)
 
     # Frame für Datenbankkonfiguration
@@ -213,8 +212,6 @@ def start_user_interface(callback):
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
     # Frame für GTFS-Pfad
-    # gtfs_path_frame = ttk.LabelFrame(input_frame, text="Dateipfad zu GTFS-Dateien", padding=(10, 10))
-    # gtfs_path_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
     gtfs_path_frame = create_frame(input_frame, "Dateipfad zu GTFS-Dateien", 1, 2, 10, 10)
 
     gtfs_path = ttk.Entry(gtfs_path_frame)
@@ -224,13 +221,8 @@ def start_user_interface(callback):
     select_gtfs_path_button.grid(row=0, column=1, padx=10, pady=10)
 
     # Frame für Batch-Size
-    # batch_size_frame = ttk.LabelFrame(input_frame, text="Batch-Größe", padding=(10, 10))
-    # batch_size_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
     batch_size_frame = create_frame(input_frame, "Batch-Größe", 2, 2, 10, 10)
 
-    # ttk.Label(batch_size_frame, text="Batch-Size:").grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
-    # batch_size = ttk.Entry(batch_size_frame, validate="key", validatecommand=vcmd)
-    # batch_size.grid(row=2, column=1, padx=10, pady=5, sticky=tk.EW)
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Buttons
@@ -247,8 +239,6 @@ def start_user_interface(callback):
     submit_button.grid(row=4, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben
-    # console_frame = ttk.LabelFrame(root, text="Konsolenausgaben", padding=(4, 10))
-    # console_frame.grid(row=0, column=2, columnspan=2, padx=10, pady=10, sticky=tk.NSEW)
     console_frame = create_frame(root, "Konsolenausgaben", 0, 2, 4, 10, _sticky=tk.NSEW, _column=2)
 
     # Scrollbar hinzufügen
