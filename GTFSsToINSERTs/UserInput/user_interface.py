@@ -3,25 +3,31 @@ import threading
 from tkinter import messagebox, filedialog
 from tkinter import ttk
 import sys
+from PIL import Image, ImageTk
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
 
 class TextRedirector(object):
-    def __init__(self, widget, tag="stdout"):
+    def __init__(self, widget, tag="stdout", auto_scroll_var=None):
         self.widget = widget
         self.tag = tag
+        self.auto_scroll_var = auto_scroll_var
         self.auto_scroll = True
+        
+        # Configure the font for the tag
+        self.widget.tag_configure(self.tag, font=("Tahoma", 10))
 
-        # Bind the <Enter> event to detect when the user scrolls
-        self.widget.bind("<Enter>", self.on_enter)
-        self.widget.bind("<Leave>", self.on_leave)
+        # Bind the <MouseWheel> event to detect when the user scrolls
         self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
 
-    def on_enter(self, event):
-        self.auto_scroll = False
-
-    def on_leave(self, event):
-        self.auto_scroll = True
+        # Load emoji images
+        self.emoji_images = {
+            "✅": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/check_mark.png").resize((19, 19), Image.LANCZOS)),
+            "❌": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/cross_mark.png").resize((18, 18), Image.LANCZOS)),
+            "⚠": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/warning.png").resize((16, 16), Image.LANCZOS)),
+            "➕": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/plus.png").resize((16, 16), Image.LANCZOS)),
+            "🔍": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/search.png").resize((17, 17), Image.LANCZOS))
+        }
 
     def on_mouse_wheel(self, event):
         # Check if the user has scrolled up
@@ -35,11 +41,18 @@ class TextRedirector(object):
         if '\r' in str:
             self.remove_last_lines_with_content(2)
             str = str.replace('\r', '')
-        self.widget.insert("end", str, (self.tag,))
+
+        # Insert text and emojis
+        for char in str:
+            if char in self.emoji_images:
+                self.widget.image_create("end", image=self.emoji_images[char])
+            else:
+                self.widget.insert("end", char, (self.tag,))
+
         self.widget.configure(state="disabled")
 
-        # Only scroll to the end if the user is at the bottom
-        if self.widget.yview()[1] == 1.0:
+        # Only scroll to the end if auto_scroll is True and the checkbox is checked
+        if self.auto_scroll_var.get() and self.auto_scroll:
             self.widget.see("end")
 
     def flush(self):
@@ -232,9 +245,14 @@ def start_user_interface(callback):
 
     console_scrollbar.config(command=console_text.yview)
 
+    # Checkbox für automatischen Bildlauf
+    auto_scroll_var = tk.BooleanVar(value=True)
+    auto_scroll_checkbox = ttk.Checkbutton(console_frame, text="Automatisch scrollen", variable=auto_scroll_var)
+    auto_scroll_checkbox.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+
     # Umleitung der Standardausgabe
-    sys.stdout = TextRedirector(console_text, "stdout")
-    sys.stderr = TextRedirector(console_text, "stderr")
+    sys.stdout = TextRedirector(console_text, "stdout", auto_scroll_var)
+    sys.stderr = TextRedirector(console_text, "stderr", auto_scroll_var)
 
     style = get_style()
 

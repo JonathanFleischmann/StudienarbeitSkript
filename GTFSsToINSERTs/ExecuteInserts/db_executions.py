@@ -87,8 +87,8 @@ def do_inserts(db_table, conn, batch_size, stop_thread_var):
                 print(f"   ➝ ✅ Erfolgreiche Inserts: {inserted_count}")
                 log.write(f"   ➝ ✅ Erfolgreiche Inserts: {inserted_count}\n")
             if unique_constraint_violations > 0:
-                print(f"   ➝ ⚠️  Übersprungene Inserts (Unique Constraint): {unique_constraint_violations}")
-                log.write(f"   ➝ ⚠️  Übersprungene Inserts (Unique Constraint): {unique_constraint_violations}\n")
+                print(f"   ➝ ⚠️ Übersprungene Inserts (Unique Constraint): {unique_constraint_violations}")
+                log.write(f"   ➝ ⚠️ Übersprungene Inserts (Unique Constraint): {unique_constraint_violations}\n")
             if other_errors > 0:
                 print(f"   ➝ ❌ Fehlgeschlagene Inserts (andere Fehler): {other_errors}")
                 log.write(f"   ➝ ❌ Fehlgeschlagene Inserts (andere Fehler): {other_errors}\n")
