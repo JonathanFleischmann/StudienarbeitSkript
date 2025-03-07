@@ -29,8 +29,6 @@ def gtfs_to_inserts(
         stop_thread_var
     )
     if stop_thread_var.get(): return
-    
-    print("\n\n")
 
     execute_inserts(gtfs_tables, conn, stop_thread_var, batch_size)
     if stop_thread_var.get(): return
