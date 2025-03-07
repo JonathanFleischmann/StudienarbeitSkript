@@ -229,20 +229,6 @@ class DatabaseTable:
             for record_id, values in self.values.items():
                 # schreibe die values getrennt durch ein Kommma in die Datei
                 file.write(record_id + ";" + "; ".join(get_str_array(values)) + "\n")
-
-
-    def generate_inserts(self):
-        """
-        Diese Funktion generiert die INSERT-Statements für diese Datenbanktabelle.
-        """
-        insert_statements = []
-        start_text = f"INSERT INTO {self.table_name} ({', '.join(self.columns)}) VALUES "
-        # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
-        for record_id, record in self.values.items():
-            insert_statements.append(
-                f"{start_text}({', '.join([f'NULL' if value in ('', None) else f"'{value.replace("'", "''")}'" if self.data_types[self.columns[index]] == DatatypeEnum.TEXT else str(value) for index, value in enumerate(record)])})"
-            ) 
-        return insert_statements
     
 
     def generate_inserts_array(self):
@@ -307,62 +293,3 @@ class DatabaseTable:
                         new_tuple += (value,)
             select_map[record_id] = new_tuple
         return select_map
-
-    
-    def generate_selects(self):
-        """
-        Generiert die SELECT-Statements für die generierte ID und gibt diese in einer Map mit der record_id als Key zurück.
-        """
-        select_statements = {}
-        start_text = f"SELECT id FROM {self.table_name} WHERE"
-        select_statement = ""
-
-        # erstelle eine Map, die die Position der Spalten anhand ihrer Namen speichert
-        column_positions = {}
-        for index, column in enumerate(self.columns):
-            column_positions[column] = index
-
-        # gehe alle Datensätze durch
-        for record_id, record in self.values.items():
-            select_statement = start_text
-
-            # gehe alle Kombinationen der unique_columns durch
-            for unique_columns_index, unique_columns in enumerate(self.unique_columns_list):
-
-                # generiere die WHERE-Bedingung für die unique_columns
-                unique_expression = ""
-                for index, unique_column in enumerate(unique_columns):
-                    unique_expression += " " + unique_column
-                    
-                    if unique_column not in self.columns:
-                        unique_expression += " IS NULL"
-                    elif self.data_types[unique_column] == DatatypeEnum.TEXT:
-                        if record[column_positions[unique_column]] == '':
-                            unique_expression += " IS NULL"
-                        else:
-                            unique_expression += f" = '{record[column_positions[unique_column]].replace("'", "''")}'"
-                    else:
-                        unique_expression += " = " + str(record[column_positions[unique_column]])
-                    if index < len(unique_columns) - 1:
-                        unique_expression += " AND"
-                        
-                select_statement += unique_expression
-                # print(unique_expression)
-
-                if unique_columns_index < len(self.unique_columns_list) - 1:
-                    select_statement += " OR"
-
-            select_statements[record_id] = select_statement
-            # print(select_statement)
-
-
-        return select_statements
-
-
-    def copy(self):
-        '''
-        gibt eine Kopie des DatabaseTable-Objekts zurück
-        '''
-        copy = DatabaseTable(self.table_name, self.columns.copy())
-        copy.set_all_values(self.values.copy())
-        return copy
