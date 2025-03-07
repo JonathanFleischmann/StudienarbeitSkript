@@ -68,4 +68,4 @@ def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
             return table
     
     except Exception as e:
-        print(f"Fehler beim Verarbeiten der Datei {filepath}: {e}", file=sys.stderr)
+        print(f"Fehler beim Verarbeiten der Datei **{filepath}**: {e}", file=sys.stderr)

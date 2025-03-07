@@ -22,10 +22,10 @@ def do_inserts(db_table, conn, batch_size, stop_thread_var):
         total_inserts = len(inserts)
 
         if total_inserts <= 0:
-            print(f"\n\nKeine Daten zum Einfügen in die Datenbank-Tabelle {db_table.get_table_name()} gefunden.")
+            print(f"\n\nKeine Daten zum Einfügen in die Datenbank-Tabelle **{db_table.get_table_name()}** gefunden.")
             return
 
-        print(f"\n➕ Starte {total_inserts} Inserts für Tabelle {db_table.get_table_name()}...")
+        print(f"\n➕ Starte {total_inserts} Inserts für Tabelle **{db_table.get_table_name()}**...")
 
         print(f"  Fortschritt: 0%")
 
@@ -70,8 +70,8 @@ def do_inserts(db_table, conn, batch_size, stop_thread_var):
             remaining_minutes = int(estimated_remaining_time // 60)
             remaining_seconds = int(estimated_remaining_time % 60)
 
-            print(f"\r  Fortschritt: {progress_percent}% | "
-                  f"Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
+            print(f"\r  Fortschritt: **{progress_percent}%** | "
+                  f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**", end="")
             
             # Nach jedem Batch committen
             conn.commit()
@@ -95,7 +95,7 @@ def do_inserts(db_table, conn, batch_size, stop_thread_var):
             
             log.write("Dauer: " + time.strftime("%H:%M:%S", time.gmtime(elapsed_time)) + "\n")
 
-        print(f"✅ Inserts für Tabelle {db_table.get_table_name()} abgeschlossen.\n")
+        print(f"✅ Inserts für Tabelle **{db_table.get_table_name()}** abgeschlossen.\n")
 
         # Fehlerprotokoll schreiben
         if batch_errors:
@@ -127,7 +127,7 @@ def select_generated_ids(db_table, conn, batch_size, stop_thread_var):
         os.makedirs(f"logs/{db_table.get_table_name()}", exist_ok=True)
         cur = conn.cursor()
 
-        print(f"\t🔍 IDs der Tabelle {db_table.get_table_name()} ermitteln.")
+        print(f"\t🔍 IDs der Tabelle **{db_table.get_table_name()}** ermitteln.")
 
         # Generiere das Select-Statement für die notwendigen Werte
         select_sql = "SELECT id, " + ", ".join(db_table.get_unique_colums_sorted()) + " FROM " + db_table.get_table_name()
@@ -172,12 +172,12 @@ def select_generated_ids(db_table, conn, batch_size, stop_thread_var):
                     if stop_thread_var.get(): return
                     db_table.set_value(record_id, "id", id_value)
                 log.write(f"\n✅ {success_count} IDs erfolgreich ermittelt.\n")
-                print(f"\t✅ IDs für Tabelle {db_table.get_table_name()} erfolgreich ermittelt.\n")
+                print(f"\t✅ IDs für Tabelle **{db_table.get_table_name()}** erfolgreich ermittelt.\n")
             else:
                 log.write(f"\nDas ist das Ergebnis aus der Datenbankabfrage: {tuple_id_map}\n")
                 log.write(f"\n✅ {success_count} IDs erfolgreich ermittelt.\n")
                 log.write(f"\n❌ {failure_count} IDs konnten nicht ermittelt werden.\n")
-                print(f"\n\t❌ Fehler bei der Ermittlung der IDs für Tabelle {db_table.get_table_name()}. Siehe Log-Datei: {"logs/" + db_table.get_table_name() + "/id_selects_log_file.txt"}\n")
+                print(f"\n\t❌ Fehler bei der Ermittlung der IDs für Tabelle **{db_table.get_table_name()}**. Siehe Log-Datei: {"logs/" + db_table.get_table_name() + "/id_selects_log_file.txt"}\n")
 
     except Exception as e:
         print(f"\n\tEin Fehler ist aufgetreten: {str(e)}\n")

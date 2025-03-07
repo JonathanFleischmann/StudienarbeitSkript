@@ -16,6 +16,7 @@ class TextRedirector(object):
         
         # Configure the font for the tag
         self.widget.tag_configure(self.tag, font=("Tahoma", 10))
+        self.widget.tag_configure("bold", font=("Tahoma", 10, "bold"))
 
         # Bind the <MouseWheel> event to detect when the user scrolls
         self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
@@ -43,11 +44,16 @@ class TextRedirector(object):
             str = str.replace('\r', '')
 
         # Insert text and emojis
-        for char in str:
-            if char in self.emoji_images:
-                self.widget.image_create("end", image=self.emoji_images[char])
+        parts = str.split('**')
+        for i, part in enumerate(parts):
+            if i % 2 == 0:
+                for char in part:
+                    if char in self.emoji_images:
+                        self.widget.image_create("end", image=self.emoji_images[char])
+                    else:
+                        self.widget.insert("end", char, (self.tag,))
             else:
-                self.widget.insert("end", char, (self.tag,))
+                self.widget.insert("end", part, ("bold",))
 
         self.widget.configure(state="disabled")
 
