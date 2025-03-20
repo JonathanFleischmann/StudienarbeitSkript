@@ -13,6 +13,6 @@ def get_table_map_from_GTFSs(input_folder, stop_thread_var):
         print("Verarbeite Datei: **" + filename + "**")
         table_objects[filename] = generate_table_object_from_filepath(txt_files[filename], filename, stop_thread_var)
         if stop_thread_var.get(): return
-        print("\r ✅ Datei **" + filename + "** erfolgreich verarbeitet.")
+        print("\r ✅ Datei **" + filename + "** wurde erfolgreich verarbeitet.")
 
     return table_objects
