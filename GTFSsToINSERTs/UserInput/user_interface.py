@@ -3,77 +3,9 @@ import threading
 from tkinter import messagebox, filedialog
 from tkinter import ttk
 import sys
-from PIL import Image, ImageTk
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
-
-class TextRedirector(object):
-    def __init__(self, widget, tag="stdout", auto_scroll_var=None):
-        self.widget = widget
-        self.tag = tag
-        self.auto_scroll_var = auto_scroll_var
-        self.auto_scroll = True
-        
-        # Configure the font for the tag
-        self.widget.tag_configure(self.tag, font=("Tahoma", 10))
-        self.widget.tag_configure("bold", font=("Tahoma", 10, "bold"))
-
-        # Bind the <MouseWheel> event to detect when the user scrolls
-        self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
-
-        # Load emoji images
-        self.emoji_images = {
-            "✅": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/check_mark.png").resize((19, 19), Image.LANCZOS)),
-            "❌": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/cross_mark.png").resize((18, 18), Image.LANCZOS)),
-            "⚠": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/warning.png").resize((16, 16), Image.LANCZOS)),
-            "➕": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/plus.png").resize((16, 16), Image.LANCZOS)),
-            "🔍": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/search.png").resize((17, 17), Image.LANCZOS))
-        }
-
-    def on_mouse_wheel(self, event):
-        # Check if the user has scrolled up
-        if self.widget.yview()[1] < 1.0:
-            self.auto_scroll = False
-        else:
-            self.auto_scroll = True
-
-    def write(self, str):
-        self.widget.configure(state="normal")
-        if '\r' in str:
-            self.remove_last_lines_with_content(2)
-            str = str.replace('\r', '')
-
-        # Insert text and emojis
-        parts = str.split('**')
-        for i, part in enumerate(parts):
-            if i % 2 == 0:
-                for char in part:
-                    if char in self.emoji_images:
-                        self.widget.image_create("end", image=self.emoji_images[char])
-                    else:
-                        self.widget.insert("end", char, (self.tag,))
-            else:
-                self.widget.insert("end", part, ("bold",))
-
-        self.widget.configure(state="disabled")
-
-        # Only scroll to the end if auto_scroll is True and the checkbox is checked
-        if self.auto_scroll_var.get() and self.auto_scroll:
-            self.widget.see("end")
-
-    def flush(self):
-        pass
-
-    def remove_last_lines_with_content(self, num_lines):
-        # Get the index of the last line with content
-        last_line_index = self.widget.index("end-1c linestart")
-        # Remove all following empty lines
-        while self.widget.get("end-2c", "end-1c") == "\n":
-            self.widget.delete("end-2c", "end-1c")
-        # Delete the last num_lines lines with content
-        for _ in range(num_lines):
-            last_line_index = self.widget.index("end-1c linestart")
-            self.widget.delete(last_line_index, "end-1c")
+from UserInput.ui_elements import LabelFrame, TextRedirector
 
 def on_submit(callback, stop_thread_var):
     global running_thread
@@ -177,11 +109,6 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     entry.grid(row=row, column=1, padx=10, pady=5, sticky=tk.EW)
     return entry
 
-def create_frame(parent, text, row, columnspan, padding_x : int, padding_y : int, _sticky=tk.EW, _column = 0) -> ttk.LabelFrame:
-    frame = ttk.LabelFrame(parent, text=text, padding=(padding_x, padding_y))
-    frame.grid(row=row, column=_column, columnspan=columnspan, padx=10, pady=3, sticky=_sticky)
-    return frame
-
 def start_user_interface(callback):
     global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread, console_text
     running_thread = None
@@ -198,11 +125,10 @@ def start_user_interface(callback):
     vcmd = (root.register(validate_int_input), '%P')
 
     # Gesamtframe für Eingaben
-    input_frame = create_frame(root, "Eingabe", 0, 1, 4, 1)
+    input_frame = LabelFrame(root, "Eingabe", tk, ttk).set_columnspan(1).set_padding((4, 1)).build()
 
     # Frame für Datenbankkonfiguration
-    db_config_frame = ttk.LabelFrame(input_frame, text="OracleDB Konfiguration", padding=(10, 10))
-    db_config_frame.grid(row=0, column=0, columnspan=2, padx=10, pady=3, sticky=tk.EW)
+    db_config_frame = LabelFrame(input_frame, "OracleDB Konfiguration", tk, ttk).build()
 
     # Labels und Eingabefelder für Datenbankkonfiguration
     db_host = create_label_entry(db_config_frame, "Host:", 0)
@@ -212,34 +138,26 @@ def start_user_interface(callback):
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
     # Frame für GTFS-Pfad
-    gtfs_path_frame = create_frame(input_frame, "Dateipfad zu GTFS-Dateien", 1, 2, 10, 10)
+    gtfs_path_frame = LabelFrame(input_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
 
     gtfs_path = ttk.Entry(gtfs_path_frame)
     gtfs_path.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
 
-    select_gtfs_path_button = ttk.Button(gtfs_path_frame, text="Ordner auswählen", command=select_gtfs_path)
-    select_gtfs_path_button.grid(row=0, column=1, padx=10, pady=10)
+    ttk.Button(gtfs_path_frame, text="Ordner auswählen", command=select_gtfs_path).grid(row=0, column=1, padx=10, pady=10)
 
     # Frame für Batch-Size
-    batch_size_frame = create_frame(input_frame, "Batch-Größe", 2, 2, 10, 10)
+    batch_size_frame = LabelFrame(input_frame, "Batch-Größe", tk, ttk).set_row(2).build()
 
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Buttons
-    create_config_button = ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config)
-    create_config_button.grid(row=3, column=0, padx=10, pady=10)
-
-    select_config_button = ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields)
-    select_config_button.grid(row=3, column=1, padx=10, pady=10)
-
-    cancel_button = ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_callback(root, stop_thread_var), style="Red.TButton")
-    cancel_button.grid(row=4, column=0, padx=10, pady=10)
-
-    submit_button = ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton")
-    submit_button.grid(row=4, column=1, padx=10, pady=10)
+    ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config).grid(row=3, column=0, padx=10, pady=10)
+    ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields).grid(row=3, column=1, padx=10, pady=10)
+    ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_callback(root, stop_thread_var), style="Red.TButton").grid(row=4, column=0, padx=10, pady=10)
+    ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton").grid(row=4, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben
-    console_frame = create_frame(root, "Konsolenausgaben", 0, 2, 4, 10, _sticky=tk.NSEW, _column=2)
+    console_frame = LabelFrame(root, "Konsolenausgaben", tk, ttk).set_padding((4, 10)).set_sticky(tk.NSEW).set_column(2).build()
 
     # Scrollbar hinzufügen
     console_scrollbar = ttk.Scrollbar(console_frame)
@@ -253,14 +171,13 @@ def start_user_interface(callback):
 
     # Checkbox für automatischen Bildlauf
     auto_scroll_var = tk.BooleanVar(value=True)
-    auto_scroll_checkbox = ttk.Checkbutton(console_frame, text="Automatisch scrollen", variable=auto_scroll_var)
-    auto_scroll_checkbox.grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
+    ttk.Checkbutton(console_frame, text="Automatisch scrollen", variable=auto_scroll_var).grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
 
     # Umleitung der Standardausgabe
     sys.stdout = TextRedirector(console_text, "stdout", auto_scroll_var)
     sys.stderr = TextRedirector(console_text, "stderr", auto_scroll_var)
 
-    style = get_style()
+    get_style()
 
     # Verhalten beim Schließen des Fensters definieren
     root.protocol("WM_DELETE_WINDOW", lambda: on_cancel(root, stop_thread_var))

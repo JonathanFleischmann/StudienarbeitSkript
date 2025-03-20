@@ -1,0 +1,140 @@
+class LabelFrame:
+    def __init__(self, parent, text, tk, ttk):
+        self.tk = tk
+        self.ttk = ttk
+        self.parent = parent
+        self.text = text
+        self.padding = (10, 10)
+        self.padx = 10
+        self.pady = 3
+        self.row = 0
+        self.column = 0
+        self.columnspan = 2
+        self.sticky = tk.EW
+
+    def set_padding(self, padding:(int, int)): # type: ignore
+        self.padding = padding
+        return self
+    
+    def set_columnspan(self, columnspan:int):
+        self.columnspan = columnspan
+        return self
+    
+    def set_sticky(self, sticky):
+        self.sticky = sticky
+        return self
+    
+    def set_row(self, row:int):
+        self.row = row
+        return self
+    
+    def set_column(self, column:int):
+        self.column = column
+        return self
+
+    def build(self):
+        label_frame = self.ttk.LabelFrame(self.parent, text=self.text, padding=self.padding)
+        label_frame.grid(row=self.row, column=self.column, columnspan=self.columnspan, padx=self.padx, pady=self.pady, sticky=self.sticky)
+        return label_frame
+    
+
+# class LabelEntry:
+#     def __init__(self, parent, text, row, tk, ttk):
+#         self.tk = tk
+#         self.ttk = ttk
+#         self.parent = parent
+#         self.text = text
+#         self.row = row
+#         self.column_label = 0
+#         self.column_entry = 1
+#         self.padx = 10
+#         self.pady = 5
+#         self.sticky_label = tk.W
+#         self.sticky_entry = tk.EW
+#         self.validate = "key"
+#         self.validate_command = None
+#         self.show = True
+
+#     def set_show(self, show):
+#         self.show = show
+#         return self
+    
+#     def set_validate_command(self, validate_command):
+#         self.validate_command = validate_command
+#         return self
+    
+#     def build(self):
+#         self.ttk.Label(self.parent, text=self.text).grid(row=self.row, column=self.column_label, padx=self.padx, pady=self.pady, sticky=self.sticky_label)
+#         entry = self.ttk.Entry(self.parent, show=self.show, validate=self.validate, validatecommand=self.validate_command)
+#         entry.grid(row=self.row, column=self.column_entry, padx=self.padx, pady=self.pady, sticky=self.sticky_entry)
+#         return entry
+
+from PIL import Image, ImageTk
+
+class TextRedirector(object):
+    def __init__(self, widget, tag="stdout", auto_scroll_var=None):
+        self.widget = widget
+        self.tag = tag
+        self.auto_scroll_var = auto_scroll_var
+        self.auto_scroll = True
+        
+        # Configure the font for the tag
+        self.widget.tag_configure(self.tag, font=("Tahoma", 10))
+        self.widget.tag_configure("bold", font=("Tahoma", 10, "bold"))
+
+        # Bind the <MouseWheel> event to detect when the user scrolls
+        self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
+
+        # Load emoji images
+        self.emoji_images = {
+            "✅": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/check_mark.png").resize((19, 19), Image.LANCZOS)),
+            "❌": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/cross_mark.png").resize((18, 18), Image.LANCZOS)),
+            "⚠": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/warning.png").resize((16, 16), Image.LANCZOS)),
+            "➕": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/plus.png").resize((16, 16), Image.LANCZOS)),
+            "🔍": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/search.png").resize((17, 17), Image.LANCZOS))
+        }
+
+    def on_mouse_wheel(self, event):
+        # Check if the user has scrolled up
+        if self.widget.yview()[1] < 1.0:
+            self.auto_scroll = False
+        else:
+            self.auto_scroll = True
+
+    def write(self, str):
+        self.widget.configure(state="normal")
+        if '\r' in str:
+            self.remove_last_lines_with_content(2)
+            str = str.replace('\r', '')
+
+        # Insert text and emojis
+        parts = str.split('**')
+        for i, part in enumerate(parts):
+            if i % 2 == 0:
+                for char in part:
+                    if char in self.emoji_images:
+                        self.widget.image_create("end", image=self.emoji_images[char])
+                    else:
+                        self.widget.insert("end", char, (self.tag,))
+            else:
+                self.widget.insert("end", part, ("bold",))
+
+        self.widget.configure(state="disabled")
+
+        # Only scroll to the end if auto_scroll is True and the checkbox is checked
+        if self.auto_scroll_var.get() and self.auto_scroll:
+            self.widget.see("end")
+
+    def flush(self):
+        pass
+
+    def remove_last_lines_with_content(self, num_lines):
+        # Get the index of the last line with content
+        last_line_index = self.widget.index("end-1c linestart")
+        # Remove all following empty lines
+        while self.widget.get("end-2c", "end-1c") == "\n":
+            self.widget.delete("end-2c", "end-1c")
+        # Delete the last num_lines lines with content
+        for _ in range(num_lines):
+            last_line_index = self.widget.index("end-1c linestart")
+            self.widget.delete(last_line_index, "end-1c")
