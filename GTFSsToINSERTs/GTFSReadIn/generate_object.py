@@ -1,8 +1,6 @@
 import sys
-
-from GTFSReadIn.file_read import clean_and_split_line
 from data_storage import DataTable
-from GTFSReadIn.control import get_value_position_map_from_array, shorten_values_to_relevant, get_id_name_from_filename
+from GTFSReadIn.core import clean_and_split_line, get_value_position_map_from_array, shorten_values_to_relevant, get_id_name_from_filename
 
 def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
     """

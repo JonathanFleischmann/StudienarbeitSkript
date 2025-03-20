@@ -1,4 +1,4 @@
-relevant_values = {
+relevant_gtfs_files_and_attributes = {
     "agency": ["agency_id", "agency_name", "agency_url", "agency_lang"],
     "calendar": ["service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date"],
     "calendar_dates": ["service_id", "date"],
@@ -10,7 +10,7 @@ relevant_values = {
     "levels": ["level_id", "level_index", "level_name", "elevation"],
 }
 
-necessary_values = {
+necessary_gtfs_files_and_attributes = {
     "agency": ["agency_id", "agency_name"],
     "calendar": ["service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date"],
     "calendar_dates": ["service_id", "date"],

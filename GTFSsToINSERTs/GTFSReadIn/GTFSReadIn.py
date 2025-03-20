@@ -1,5 +1,4 @@
-from GTFSReadIn.control import shorten_file_map_to_relevant_files
-from GTFSReadIn.file_read import get_txt_files_in_path, get_folder
+from GTFSReadIn.core import get_txt_files_in_path, shorten_file_map_to_relevant_files
 from GTFSReadIn.generate_object import generate_table_object_from_filepath
 
 def get_table_map_from_GTFSs(input_folder, stop_thread_var):
