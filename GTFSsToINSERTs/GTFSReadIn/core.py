@@ -83,8 +83,8 @@ def get_value_position_map_from_array(columns):
 
 def shorten_values_to_relevant(value_position, filename):
     """
-     Diese Funktion überprüft, ob alle notwendigen Werte in der txt-Datei vorhanden sind 
-     und kürzt die Werte in der txt-Datei auf die relevanten Werte.
+    Diese Funktion überprüft, ob alle notwendigen Werte für die txt-Datei vorhanden sind 
+    und kürzt die Werte in der txt-Datei auf die relevanten Werte.
     """
 
     if filename in necessary_gtfs_files_and_attributes:
@@ -100,7 +100,7 @@ def shorten_values_to_relevant(value_position, filename):
     return shortened_values
 
 
-def get_id_name_from_filename(filename):
+def get_ids_from_filename(filename):
     """
     Diese Funktion gibt den Namen der id-Spalte für die Datei zurück.
     """

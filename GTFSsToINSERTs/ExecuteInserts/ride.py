@@ -22,6 +22,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         "service_id": False
     }
     used_columns = []
+    trip_headsign_found = False
     for column in trips_gtfs_table_columns:
         if column == "route_id":
             database_table_columns.append("route")
@@ -36,6 +37,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         elif column == "trip_headsign":
             database_table_columns.append("headsign")
             used_columns.append(column)
+            trip_headsign_found = True
         elif column not in ["block_id", "shape_id", "wheelchair_accessible", "bikes_allowed", "trip_short_name", "direction_id"]:
             print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
             sys.exit(1)
@@ -81,7 +83,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
 
     # überprüfe, ob die Spalten "stop_sequence", "trip_id" und "departure_time" in der GTFS-Tabelle stop_times vorhanden sind
     stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
-    headsign_found = False
+    stop_times_headsign_found = False
     if "stop_sequence" not in stop_times_gtfs_table_columns:
         print("Die Spalte 'stop_sequence' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
         sys.exit(1)
@@ -89,7 +91,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         print("Die Spalte 'departure_time' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
         sys.exit(1)
     if "stop_headsign" in stop_times_gtfs_table_columns:
-        headsign_found = True
+        stop_times_headsign_found = True
 
     # Füge die Spalte "departure_time" zur Datenbanktabelle hinzu
     ride_database_table.add_column("start_time")
@@ -100,10 +102,15 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         start_time = stop_times_gtfs_table.get_value(start_stop_time, "departure_time")
         ride_database_table.set_value(trip_id, "start_time", start_time)
 
-    if headsign_found:
-        ride_database_table.add_column("headsign")
-        # Weise jedem Ride den headsign hinzu
+    if stop_times_headsign_found:
+        if not trip_headsign_found:
+            ride_database_table.add_column("headsign")
+        else:
+            headsign_index = ride_database_table.get_columns().index("headsign")
+        # Weise jedem Ride den headsign hinzu oder ersetze den headsign aus dem GTFS-File, wenn für die Spalte kein Wert vorhanden ist
         for trip_id, record in ride_database_table.get_all_records().items():
+            if trip_headsign_found and record[headsign_index] != "" and record[headsign_index] != None:
+                continue
             start_stop_time = trip_id + "1"
             headsign = stop_times_gtfs_table.get_value(start_stop_time, "stop_headsign")
             ride_database_table.set_value(trip_id, "headsign", headsign)

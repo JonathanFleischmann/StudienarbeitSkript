@@ -3,11 +3,16 @@ relevant_gtfs_files_and_attributes = {
     "calendar": ["service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date"],
     "calendar_dates": ["service_id", "date"],
     "routes": ["route_id", "route_long_name", "route_short_name", "route_type", "route_desc", "agency_id"],
-    "trips": ["trip_id", "route_id", "service_id"],
+    "trips": ["trip_id", "route_id", "service_id", "trip_headsign"],
     "stop_times": ["trip_id", "arrival_time", "departure_time", "stop_id", "pickup_type", "drop_off_type", "stop_headsign", "stop_sequence"],
     "stops": ["stop_id", "stop_name", "stop_lat", "stop_lon", "location_type", "parent_station", "level_id"],
     "pathways": ["pathway_id", "from_stop_id", "to_stop_id", "pathway_mode", "is_bidirectional", "traversal_time"],
     "levels": ["level_id", "level_index", "level_name", "elevation"],
+}
+
+necessary_attributes_in_relevant_gtfs_files = {
+    "levels": ["level_id", "elevation"],
+    "pathways": ["pathway_id", "from_stop_id", "to_stop_id", "pathway_mode"],
 }
 
 necessary_gtfs_files_and_attributes = {
@@ -17,7 +22,7 @@ necessary_gtfs_files_and_attributes = {
     "routes": ["route_id", "route_long_name", "route_short_name", "agency_id"],
     "trips": ["trip_id", "route_id", "service_id"],
     "stop_times": ["trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence"],
-    "stops": ["stop_id", "stop_name", "stop_lat", "stop_lon", "location_type"],
+    "stops": ["stop_id", "stop_name", "stop_lat", "stop_lon", "location_type", "parent_station"],
 }
 
 id_values = {
