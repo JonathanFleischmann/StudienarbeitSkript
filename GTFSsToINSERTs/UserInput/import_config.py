@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import filedialog
-import configparser
 
 import tkinter as tk
 from tkinter import filedialog

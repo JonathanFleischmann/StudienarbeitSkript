@@ -1,18 +1,28 @@
 import tkinter as tk
 import threading
-from tkinter import messagebox, filedialog
+from tkinter import filedialog
 from tkinter import ttk
 import sys
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
-from UserInput.ui_elements import LabelFrame, TextRedirector, Style
+from UserInput.ui_elements import LabelFrame, TextRedirector, Style, set_entry_value
+from UserInput.validation import validate_entries, validate_int_input
+from UserInput.thread_control import stop_thread
 
 def on_submit(callback, stop_thread_var):
     global running_thread
     if running_thread and running_thread.is_alive():
         print("Operation läuft bereits...")
         return
-    if validate_entries():
+    if validate_entries( 
+        [   (db_host, "Host"),
+            (db_port, "Port"),
+            (db_service_name, "Service-Name"),
+            (db_username, "Username"),
+            (db_password, "Password"),
+            (gtfs_path, "GTFS-Pfad"),   ],
+        batch_size
+    ):
         # Leere die Konsolenausgabe
         console_text.configure(state="normal")
         console_text.delete(1.0, tk.END)
@@ -32,73 +42,26 @@ def on_submit(callback, stop_thread_var):
         thread.start()
         running_thread = thread
 
-def stop_callback(root, stop_thread_var):
-    if running_thread and running_thread.is_alive():
-        print("Operation abbrechen...")
-        stop_thread_var.set(True)
-        check_thread(root, stop_thread_var)
-    else:
-        print("Kein laufender Thread")
-
-def check_thread(root, stop_thread_var):
-    """Überprüft, ob der Thread beendet ist, ohne die GUI zu blockieren"""
-    if running_thread.is_alive():
-        root.after(200, lambda: check_thread(root, stop_thread_var))  # In 100ms erneut prüfen
-    else:
-        print("Operation abgebrochen")
-        stop_thread_var.set(False)
-
 def on_cancel(root, stop_thread_var):
-    stop_callback(root, stop_thread_var)
+    stop_thread(root, stop_thread_var, running_thread)
     root.quit()
-
-def validate_entries():
-    fields = [
-        (db_host, "Host"),
-        (db_port, "Port"),
-        (db_service_name, "Service-Name"),
-        (db_username, "Username"),
-        (db_password, "Password"),
-        (gtfs_path, "GTFS-Pfad"),
-    ]
-
-    for field, name in fields:
-        if not field.get():
-            messagebox.showerror("Fehler", f"{name} darf nicht leer sein.")
-            return False
-
-    if not batch_size.get().isdigit():
-        messagebox.showerror("Fehler", "Batch-Size muss eine Zahl sein.")
-        return False
-
-    return True
 
 def load_config_to_fields():
     config = get_config()
     if config:
         db_config = config.get('database', {})
-        set_entry_value(db_host, db_config.get('host', ''))
-        set_entry_value(db_port, db_config.get('port', ''))
-        set_entry_value(db_service_name, db_config.get('service-name', ''))
-        set_entry_value(db_username, db_config.get('username', ''))
-        set_entry_value(db_password, db_config.get('password', ''))
-        set_entry_value(gtfs_path, config.get('input_directory', ''))
-        set_entry_value(batch_size, config.get('batch_size', ''))
+        set_entry_value(db_host, db_config.get('host', ''), tk)
+        set_entry_value(db_port, db_config.get('port', ''), tk)
+        set_entry_value(db_service_name, db_config.get('service-name', ''), tk)
+        set_entry_value(db_username, db_config.get('username', ''), tk)
+        set_entry_value(db_password, db_config.get('password', ''), tk)
+        set_entry_value(gtfs_path, config.get('input_directory', ''), tk)
+        set_entry_value(batch_size, config.get('batch_size', ''), tk)
 
 def select_gtfs_path():
     folder_path = filedialog.askdirectory(title="Ordner auswählen")
     if folder_path:
-        set_entry_value(gtfs_path, folder_path)
-
-def set_entry_value(entry, value):
-    entry.delete(0, tk.END)
-    entry.insert(0, value)
-
-def validate_int_input(P):
-    if P.isdigit() or P == "":
-        return True
-    else:
-        return False
+        set_entry_value(gtfs_path, folder_path, tk)
 
 def create_label_entry(parent, text, row, show=None, validate_command=None):
     ttk.Label(parent, text=text).grid(row=row, column=0, padx=10, pady=5, sticky=tk.W)
@@ -148,7 +111,7 @@ def start_user_interface(callback):
     ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields).grid(row=3, column=1, padx=10, pady=10)
 
     # Buttons für Starten des Imports und Abbrechen des Imports
-    ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_callback(root, stop_thread_var), style="Red.TButton").grid(row=4, column=0, padx=10, pady=10)
+    ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_thread(root, stop_thread_var, running_thread), style="Red.TButton").grid(row=4, column=0, padx=10, pady=10)
     ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton").grid(row=4, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben

@@ -181,3 +181,7 @@ def Style(ttk):
             background=[("active", "#e0e0e0")])
     
     return style
+
+def set_entry_value(entry, value, tk):
+    entry.delete(0, tk.END)
+    entry.insert(0, value)
