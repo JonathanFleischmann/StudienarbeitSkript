@@ -7,5 +7,5 @@
         "password": "saqvizsanqoxsizRe9"
     },
     "input_directory": "C:/Users/jonif/Desktop/Studienarbeit/Verkehrsdaten/GTFSDatensaetze/gtfs_j24",
-    "batch_size": 30
+    "batch_size": 100
 }

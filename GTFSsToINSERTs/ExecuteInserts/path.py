@@ -6,7 +6,7 @@ from ExecuteInserts.datatype_enum import DatatypeEnum
 from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h
 
 
-def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table):
+def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var):
     """
     Diese Funktion 
     """
@@ -178,6 +178,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         progressed_records += 1
 
         if progressed_records % 10000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((progressed_records / (total_datasets + total_datasets * 0.2)) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time
@@ -229,6 +230,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         progressed_records += 1
 
         if progressed_records % 10000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((progressed_records / (total_datasets + total_datasets * 0.2)) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time
@@ -260,6 +262,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         path_database_table.set_value(record_id, "ride", ride_new_id)
 
         if progressed_records % 100000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time
@@ -282,6 +285,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         progressed_records += 1
 
         if progressed_records % 100000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time
@@ -304,6 +308,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         path_database_table.set_value(record_id, "descend_type", descend_type_new_id)
 
         if progressed_records % 100000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time
@@ -325,6 +330,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
             path_database_table.set_value(record_id, "walk_type", walk_type_new_id)
 
         if progressed_records % 100000 == 0:
+            if stop_thread_var.get(): return
             elapsed_time = time.time() - start_time
             progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
             estimated_remaining_time = elapsed_time * 1/(progress_percent/100) - elapsed_time

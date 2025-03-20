@@ -137,6 +137,6 @@ def execute_inserts(gtfs_table_map, conn, stop_thread_var, batch_size=100):
     if stop_thread_var.get(): return
     pathways_gtfs_table = gtfs_table_map["pathways"] if "pathways" in gtfs_table_map else None
     if stop_thread_var.get(): return
-    path_database_table = generate_path_database_table_from_gtfs_tables(gtfs_table_map["stop_times"], pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table)
+    path_database_table = generate_path_database_table_from_gtfs_tables(gtfs_table_map["stop_times"], pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var)
     if stop_thread_var.get(): return
     do_inserts(path_database_table, conn, batch_size, stop_thread_var)
