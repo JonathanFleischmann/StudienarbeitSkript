@@ -1,9 +1,9 @@
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 def generate_walk_type_database_table():
 
-    walk_type_database_table = DatabaseTable("walk_type", ["type"])
+    walk_type_database_table = DataTable("walk_type", ["type"])
 
     walk_type_database_table.add_unique_column("type")
 

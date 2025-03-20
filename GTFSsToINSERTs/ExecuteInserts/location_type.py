@@ -1,9 +1,9 @@
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 def generate_location_type_database_table():
 
-    location_type_database_table = DatabaseTable("location_type", ["type"])
+    location_type_database_table = DataTable("location_type", ["type"])
 
     location_type_database_table.add_unique_column("type")
 

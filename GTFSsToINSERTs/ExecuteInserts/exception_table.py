@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -31,11 +31,11 @@ def generate_exception_table_database_table_from_gtfs_table(calendar_dates_gtfs_
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
-    exception_table_database_table = DatabaseTable("exception_table", database_table_columns)
+    exception_table_database_table = DataTable("exception_table", database_table_columns)
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     exception_table_database_table.set_all_values(
-        calendar_dates_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+        calendar_dates_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
     exception_table_database_table.add_unique_column("date_col")

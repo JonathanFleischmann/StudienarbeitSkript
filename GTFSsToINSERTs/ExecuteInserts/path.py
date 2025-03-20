@@ -1,7 +1,7 @@
 import sys
 import copy
 import time
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h
 
@@ -102,7 +102,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
                 sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle path
-    path_database_table = DatabaseTable("path", database_table_columns)
+    path_database_table = DataTable("path", database_table_columns)
     
     path_database_table.add_unique_column("start_point")
     path_database_table.add_unique_column("end_point")
@@ -142,7 +142,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
     for column in used_stop_times_columns:
         stop_times_column_positions[column] = stop_times_gtfs_table_columns.index(column)
 
-    for record_id, record in stop_times_gtfs_table.get_distinct_attributes_of_all_records(used_stop_times_columns).items():
+    for record_id, record in stop_times_gtfs_table.get_distinct_values_of_all_records(used_stop_times_columns).items():
         data_map = {}
 
         ride = record[stop_times_column_positions["trip_id"]]
@@ -161,7 +161,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
             if destination_in_stop_times:
                 data_map["destination"] = record[stop_times_column_positions["stop_headsign"]]
             elif destination_in_ride:
-                data_map["destination"] = ride_database_table.get_attribute(ride, "headsign")
+                data_map["destination"] = ride_database_table.get_value(ride, "headsign")
             data_map["min_travel_time"] = get_minute_difference(data_map["arrival_time"], data_map["departure_time"])
             data_map["start_point"] = record[stop_times_column_positions["stop_id"]]
             data_map["end_point"] = next_path[stop_times_column_positions["stop_id"]]
@@ -194,7 +194,7 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         pathways_columns_positions[column] = pathways_gtfs_table_columns.index(column)
 
     if pathways_gtfs_table is not None:
-        for record_id, record in pathways_gtfs_table.get_distinct_attributes_of_all_records(used_pathways_columns).items():
+        for record_id, record in pathways_gtfs_table.get_distinct_values_of_all_records(used_pathways_columns).items():
             data_map = {}
 
             data_map["is_ride"] = 0
@@ -253,8 +253,8 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
 
 
     # ersetze die ride-id aus der stop_times-gtfs-file durch die neu generierte id der ride-table
-    ride_id_map = ride_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, ride in path_database_table.get_distinct_attributes_of_all_records(["ride"]).items():
+    ride_id_map = ride_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, ride in path_database_table.get_distinct_values_of_all_records(["ride"]).items():
         progressed_records += 1
         if ride[0] is None:
             continue
@@ -275,8 +275,8 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
 
     
     # ersetze start_point und end_point aus der stop_times-gtfs-file/pathways-gtfs_file durch die neu generierte id der traffic_point-table
-    traffic_point_id_map = traffic_point_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, traffic_points in path_database_table.get_distinct_attributes_of_all_records(["start_point", "end_point"]).items():
+    traffic_point_id_map = traffic_point_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, traffic_points in path_database_table.get_distinct_values_of_all_records(["start_point", "end_point"]).items():
         start_point_new_id = traffic_point_id_map[traffic_points[0]][0]
         end_point_new_id = traffic_point_id_map[traffic_points[1]][0]
         path_database_table.set_value(record_id, "start_point", start_point_new_id)
@@ -297,8 +297,8 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
                   f"Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
 
     # ersetze enter_type und descend_type aus der stop_times-gtfs-file durch die neu generierte id der stop_type-table
-    stop_type_id_map = stop_type_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, stop_types in path_database_table.get_distinct_attributes_of_all_records(["enter_type", "descend_type"]).items():
+    stop_type_id_map = stop_type_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, stop_types in path_database_table.get_distinct_values_of_all_records(["enter_type", "descend_type"]).items():
         progressed_records += 1
         if stop_types[0] is None or stop_types[1] is None:
             continue
@@ -321,8 +321,8 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
 
     if pathways_gtfs_table is not None:
         # ersetze walk_type aus der pathways-gtfs-file durch die neu generierte id der walk_type-table
-        walk_type_id_map = walk_type_database_table.get_distinct_attributes_of_all_records(["id"])
-        for record_id, walk_type in path_database_table.get_distinct_attributes_of_all_records(["walk_type"]).items():
+        walk_type_id_map = walk_type_database_table.get_distinct_values_of_all_records(["id"])
+        for record_id, walk_type in path_database_table.get_distinct_values_of_all_records(["walk_type"]).items():
             progressed_records += 1
             if walk_type[0] is None:
                 continue

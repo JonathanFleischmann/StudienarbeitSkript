@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -58,7 +58,7 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
-    traffic_point_database_table = DatabaseTable("traffic_point", database_table_columns)
+    traffic_point_database_table = DataTable("traffic_point", database_table_columns)
 
     traffic_point_database_table.add_unique_column("latitude")
     traffic_point_database_table.add_unique_column("longitude")
@@ -76,20 +76,20 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
 
     # Füge die Datensätze der GTFS-Tabelle stops in die Datenbanktabelle ein
     traffic_point_database_table.set_all_values(
-        stops_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+        stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
     if parent_station_found:
-        traffic_centre_id_map = traffic_centre_database_table.get_distinct_attributes_of_all_records(["id"])
-        for record_id, traffic_centre_id in traffic_point_database_table.get_distinct_attributes_of_all_records(["traffic_centre"]).items():
+        traffic_centre_id_map = traffic_centre_database_table.get_distinct_values_of_all_records(["id"])
+        for record_id, traffic_centre_id in traffic_point_database_table.get_distinct_values_of_all_records(["traffic_centre"]).items():
             if traffic_centre_id[0] == "":
                 continue
             traffic_centre_new_id = traffic_centre_id_map[traffic_centre_id[0]][0]
             traffic_point_database_table.set_value(record_id, "traffic_centre", traffic_centre_new_id)
 
     if height_found:
-        height_id_map = height_database_table.get_distinct_attributes_of_all_records(["id"])
-        for record_id, height_id in traffic_point_database_table.get_distinct_attributes_of_all_records(["height"]).items():
+        height_id_map = height_database_table.get_distinct_values_of_all_records(["id"])
+        for record_id, height_id in traffic_point_database_table.get_distinct_values_of_all_records(["height"]).items():
             if height_id[0] == "":
                 continue
             height_new_id = height_id_map[height_id[0]][0]
@@ -97,8 +97,8 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
 
 
     # ersetze den type aus dem gtfs-file durch die neu generierte id des location_type
-    location_type_id_map = location_type_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, type in traffic_centre_database_table.get_distinct_attributes_of_all_records(["location_type"]).items():
+    location_type_id_map = location_type_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
         if type[0] == "":
             continue
         location_type_new_id = location_type_id_map[str(type[0])][0]

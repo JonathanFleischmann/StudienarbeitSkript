@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -36,18 +36,18 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
-    period_database_table = DatabaseTable("period", database_table_columns)
+    period_database_table = DataTable("period", database_table_columns)
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     period_database_table.set_all_values(
-        calendar_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+        calendar_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
     # Füge die Spalte für die Foreign-Keys auf die weekdays hinzu
     period_database_table.add_column("weekdays")
 
     # Füge die Werte der Foreign-Keys auf die weekdays hinzu
-    for record_id, record in weekdays_database_table.get_distinct_attributes_of_all_records(["id"]).items():
+    for record_id, record in weekdays_database_table.get_distinct_values_of_all_records(["id"]).items():
         period_database_table.set_value(record_id, "weekdays", record[0])
 
     period_database_table.add_unique_column("start_date")

@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -50,7 +50,7 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
     if not necessary_values_found["parent_station"]:
         print(f"Es wurden keine Verknüpfungen zu Verkehrsknotenpunkten gefunden", file=sys.stderr)
         
-        traffic_centre_database_table = DatabaseTable("traffic_centre", database_table_columns)
+        traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
         
         traffic_centre_database_table.add_unique_column("name")
         traffic_centre_database_table.add_unique_column("latitude")
@@ -77,7 +77,7 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
-    traffic_centre_database_table = DatabaseTable("traffic_centre", database_table_columns)
+    traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
 
     traffic_centre_database_table.add_unique_column("name")
     traffic_centre_database_table.add_unique_column("latitude")
@@ -93,7 +93,7 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
         }
     )
 
-    stops = stops_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+    stops = stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
 
     # Finde in der GTFS-Tabelle stops alle Einträge, die parent_stations von anderen Einträgen sind,
     # selbst aber keine parent_station haben und auf die keine Referenz von stop_times existiert
@@ -103,13 +103,13 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
     for parent_station, stop_ids in parent_stations.items():
         if parent_station is None:
             continue
-        if (stops_gtfs_table.get_attribute(parent_station, "parent_station") is None or stops_gtfs_table.get_attribute(parent_station, "parent_station") == "") and parent_station not in stop_times:
+        if (stops_gtfs_table.get_value(parent_station, "parent_station") is None or stops_gtfs_table.get_value(parent_station, "parent_station") == "") and parent_station not in stop_times:
             traffic_centre_database_table.add_record(parent_station, stops[parent_station])
             stops_gtfs_table.delete_record(parent_station)
 
     # ersetze den type aus dem gtfs-file durch die neu generierte id des location_type
-    location_type_id_map = location_type_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, type in traffic_centre_database_table.get_distinct_attributes_of_all_records(["location_type"]).items():
+    location_type_id_map = location_type_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
         location_type_new_id = location_type_id_map[type[0]][0]
         traffic_centre_database_table.set_value(record_id, "location_type", location_type_new_id)
 

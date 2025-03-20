@@ -1,9 +1,9 @@
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 def generate_stop_type_database_table():
 
-    stop_type_database_table = DatabaseTable("stop_type", ["type"])
+    stop_type_database_table = DataTable("stop_type", ["type"])
 
     stop_type_database_table.add_unique_column("type")
 

@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -47,11 +47,11 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
-    ride_database_table = DatabaseTable("ride", database_table_columns)
+    ride_database_table = DataTable("ride", database_table_columns)
 
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     ride_database_table.set_all_values(
-        trips_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+        trips_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
     ride_database_table.add_unique_column("route")
@@ -68,14 +68,14 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
     )
 
     # ersetze die route_id aus dem gtfs-file durch die neu generierte id der route-table
-    route_id_map = route_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, route in ride_database_table.get_distinct_attributes_of_all_records(["route"]).items():
+    route_id_map = route_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, route in ride_database_table.get_distinct_values_of_all_records(["route"]).items():
         route_new_id = route_id_map[route[0]][0]
         ride_database_table.set_value(record_id, "route", route_new_id)
 
     # ersetze die service_id aus dem gtfs-file durch die neu generierte id der period-table
-    period_id_map = period_database_table.get_distinct_attributes_of_all_records(["id"])
-    for record_id, period in ride_database_table.get_distinct_attributes_of_all_records(["period"]).items():
+    period_id_map = period_database_table.get_distinct_values_of_all_records(["id"])
+    for record_id, period in ride_database_table.get_distinct_values_of_all_records(["period"]).items():
         period_new_id = period_id_map[period[0]][0]
         ride_database_table.set_value(record_id, "period", period_new_id)
 
@@ -97,7 +97,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
     # Weise jedem Ride die Startzeit hinzu
     for trip_id, record in ride_database_table.get_all_records().items():
         start_stop_time = trip_id + "1"
-        start_time = stop_times_gtfs_table.get_attribute(start_stop_time, "departure_time")
+        start_time = stop_times_gtfs_table.get_value(start_stop_time, "departure_time")
         ride_database_table.set_value(trip_id, "start_time", start_time)
 
     if headsign_found:
@@ -105,7 +105,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         # Weise jedem Ride den headsign hinzu
         for trip_id, record in ride_database_table.get_all_records().items():
             start_stop_time = trip_id + "1"
-            headsign = stop_times_gtfs_table.get_attribute(start_stop_time, "stop_headsign")
+            headsign = stop_times_gtfs_table.get_value(start_stop_time, "stop_headsign")
             ride_database_table.set_value(trip_id, "headsign", headsign)
 
     return ride_database_table

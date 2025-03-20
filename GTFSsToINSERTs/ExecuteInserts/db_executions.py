@@ -2,7 +2,6 @@ import cx_Oracle
 import sys
 import os
 import time
-from ExecuteInserts.data_storage import DatabaseTable
     
 def do_inserts(db_table, conn, batch_size, stop_thread_var):
     """

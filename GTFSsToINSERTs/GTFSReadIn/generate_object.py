@@ -1,7 +1,7 @@
 import sys
 
 from GTFSReadIn.file_read import clean_and_split_line
-from GTFSReadIn.data_storage import GTFSTable
+from data_storage import DataTable
 from GTFSReadIn.control import get_value_position_map_from_array, shorten_values_to_relevant, get_id_name_from_filename
 
 def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
@@ -19,7 +19,7 @@ def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
 
             # erstelle eine Map, die angibt, wo die relevanten Spalten in der txt-Datei liegen
             # und überprüfe, ob alle notwendigen Werte vorhanden sind
-            attribute_position = shorten_values_to_relevant(
+            value_position = shorten_values_to_relevant(
                 get_value_position_map_from_array(columns), 
                 filename
             )
@@ -29,23 +29,23 @@ def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
             id_positions = []
             # gehe jedes Element in der Map durch und suche die id-Spalte(n)
             id_array = get_id_name_from_filename(filename)
-            for attribute in attribute_position:
+            for value in value_position:
                 if len(id_array) <= 1:
-                    if id_array[0] == attribute:
-                        id_positions.append(attribute_position[attribute])
-                        del attribute_position[attribute]
+                    if id_array[0] == value:
+                        id_positions.append(value_position[value])
+                        del value_position[value]
                         break
                 else:
                     for id_name in id_array:
-                        if id_name in attribute:
-                            id_positions.append(attribute_position[attribute])
+                        if id_name in value:
+                            id_positions.append(value_position[value])
             
             if len(id_positions) == 0:	
                 print("Die id-Spalten \"" + id_array + "\" wurden nicht gefunden.", file=sys.stderr)
                 sys.exit(1)
 
             # Erstelle ein Table-Objekt, das die Daten speichert
-            table = GTFSTable(list(attribute_position), filename)
+            table = DataTable(filename, list(value_position))
 
             # Gehe alle Zeilen in der txt-Datei ab der zweiten Zeile durch
             linecount = 0
@@ -60,8 +60,8 @@ def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
                 for id_position in id_positions:
                     id += str(values[id_position])
                 relevant_values = []
-                for attribute in attribute_position:
-                    relevant_values.append(values[attribute_position[attribute]])
+                for value in value_position:
+                    relevant_values.append(values[value_position[value]])
                 table.add_record(id, relevant_values)
 
                 linecount += 1

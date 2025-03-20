@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -30,7 +30,7 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
             sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle agency
-    height_database_table = DatabaseTable("height", database_table_columns)
+    height_database_table = DataTable("height", database_table_columns)
 
     height_database_table.add_unique_column("name")
     height_database_table.add_unique_column("above_sea_level")
@@ -38,7 +38,7 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
 
     # Füge die Datensätze der GTFS-Tabelle agency in die Datenbanktabelle ein
     height_database_table.set_all_values(
-        levels_gtfs_table.get_distinct_attributes_of_all_records(used_columns)
+        levels_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
     height_database_table.set_data_types(

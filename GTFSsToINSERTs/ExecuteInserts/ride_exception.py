@@ -1,5 +1,5 @@
 import sys
-from ExecuteInserts.data_storage import DatabaseTable
+from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
 
 
@@ -8,12 +8,12 @@ def generate_ride_exception_database_table_from_gtfs_tables(exception_table_data
     Diese Funktion 
     """
 
-    ride_exception_database_table = DatabaseTable("ride_exception", ["ride", "exception_table"])
+    ride_exception_database_table = DataTable("ride_exception", ["ride", "exception_table"])
 
-    service_date_id_service_id_map = calendar_dates_gtfs_table.get_distinct_attributes_of_all_records(["service_id"])
-    service_date_id_exception_table_id_map = exception_table_database_table.get_distinct_attributes_of_all_records(["id"])
-    trip_id_ride_id_map = ride_database_table.get_distinct_attributes_of_all_records(["id"])
-    trip_id_service_id_map = trips_gtfs_table.get_distinct_attributes_of_all_records(["service_id"])
+    service_date_id_service_id_map = calendar_dates_gtfs_table.get_distinct_values_of_all_records(["service_id"])
+    service_date_id_exception_table_id_map = exception_table_database_table.get_distinct_values_of_all_records(["id"])
+    trip_id_ride_id_map = ride_database_table.get_distinct_values_of_all_records(["id"])
+    trip_id_service_id_map = trips_gtfs_table.get_distinct_values_of_all_records(["service_id"])
 
     service_id_ride_ids_map = {}
     for trip_id, service_id in trip_id_service_id_map.items():
