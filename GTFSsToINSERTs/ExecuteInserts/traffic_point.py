@@ -46,9 +46,6 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
             height_found = True
             database_table_columns.append("height")
             used_columns.append(column)
-        elif column not in ["stop_code", "stop_desc", "platform_code", "wheelchair_boarding", "level_id"]:
-            print(f"Die Spalte {column} wurde nicht für die GTFS-Tabelle stops erwartet", file=sys.stderr)
-            sys.exit(1)
     
 
     # Überprüfe 

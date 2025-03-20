@@ -29,10 +29,6 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
         elif column == "agency_lang":
             database_table_columns.append("language")
             used_columns.append(column)
-        else:
-            print(f"Die Spalte {column} wird nicht in der Datenbanktabelle agency abgebildet.", file=sys.stderr)
-            sys.exit(1)
-    
 
     # Überprüfe 
     for necessary_value, found in necessary_values_found.items():

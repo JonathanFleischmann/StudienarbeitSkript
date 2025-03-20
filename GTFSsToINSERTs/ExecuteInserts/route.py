@@ -39,9 +39,6 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
             database_table_columns.append("agency")
             necessary_values_found["agency_id"] = True
             used_columns.append(column)
-        else:
-            print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
-            sys.exit(1)
     
     # Überprüfe 
     for necessary_value, found in necessary_values_found.items():

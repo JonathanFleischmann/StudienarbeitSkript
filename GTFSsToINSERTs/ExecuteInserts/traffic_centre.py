@@ -41,9 +41,6 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
             used_columns.append(column)
         elif column == "parent_station":
             necessary_values_found["parent_station"] = True
-        elif column not in ["stop_code", "stop_desc", "platform_code", "wheelchair_boarding", "level_id"]:
-            print(f"Die Spalte {column} wurde nicht für die GTFS-Tabelle stops erwartet", file=sys.stderr)
-            sys.exit(1)
     
 
 

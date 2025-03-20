@@ -25,9 +25,6 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
         elif column == "level_index":
             database_table_columns.append("floor")
             used_columns.append(column)
-        else:
-            print(f"Die Spalte {column} in der GTFS-Tabelle levels wurde nicht erwartet", file=sys.stderr)
-            sys.exit(1)
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle agency
     height_database_table = DataTable("height", database_table_columns)

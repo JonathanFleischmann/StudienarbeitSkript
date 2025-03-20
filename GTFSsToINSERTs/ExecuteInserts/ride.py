@@ -38,9 +38,6 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
             database_table_columns.append("headsign")
             used_columns.append(column)
             trip_headsign_found = True
-        elif column not in ["block_id", "shape_id", "wheelchair_accessible", "bikes_allowed", "trip_short_name", "direction_id"]:
-            print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
-            sys.exit(1)
     
     # Überprüfe
     for necessary_value, found in necessary_values_found.items():

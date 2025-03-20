@@ -30,9 +30,6 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
             database_table_columns.append(column)
             necessary_values_found[column] = True
             used_columns.append(column)
-        elif column not in ["start_date", "end_date"]:
-            print(f"Die Spalte {column} wird nicht in der Datenbanktabelle route abgebildet.", file=sys.stderr)
-            sys.exit(1)
     
     # Überprüfe 
     for necessary_value, found in necessary_values_found.items():
