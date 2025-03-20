@@ -5,7 +5,7 @@ from tkinter import ttk
 import sys
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
-from UserInput.ui_elements import LabelFrame, TextRedirector
+from UserInput.ui_elements import LabelFrame, TextRedirector, Style
 
 def on_submit(callback, stop_thread_var):
     global running_thread
@@ -53,27 +53,24 @@ def on_cancel(root, stop_thread_var):
     root.quit()
 
 def validate_entries():
-    if not db_host.get():
-        messagebox.showerror("Fehler", "Host darf nicht leer sein.")
-        return False
-    if not db_port.get():
-        messagebox.showerror("Fehler", "Port darf nicht leer sein.")
-        return False
-    if not db_service_name.get():
-        messagebox.showerror("Fehler", "Service-name darf nicht leer sein.")
-        return False
-    if not db_username.get():
-        messagebox.showerror("Fehler", "Username darf nicht leer sein.")
-        return False
-    if not db_password.get():
-        messagebox.showerror("Fehler", "Password darf nicht leer sein.")
-        return False
-    if not gtfs_path.get():
-        messagebox.showerror("Fehler", "GTFS-Pfad darf nicht leer sein.")
-        return False
+    fields = [
+        (db_host, "Host"),
+        (db_port, "Port"),
+        (db_service_name, "Service-Name"),
+        (db_username, "Username"),
+        (db_password, "Password"),
+        (gtfs_path, "GTFS-Pfad"),
+    ]
+
+    for field, name in fields:
+        if not field.get():
+            messagebox.showerror("Fehler", f"{name} darf nicht leer sein.")
+            return False
+
     if not batch_size.get().isdigit():
         messagebox.showerror("Fehler", "Batch-Size muss eine Zahl sein.")
         return False
+
     return True
 
 def load_config_to_fields():
@@ -115,6 +112,7 @@ def start_user_interface(callback):
 
     root = tk.Tk()
 
+    # Variable, um den Thread zu stoppen
     stop_thread_var = tk.BooleanVar(value=False)
 
     # Hauptfenster erstellen
@@ -127,46 +125,40 @@ def start_user_interface(callback):
     # Gesamtframe für Eingaben
     input_frame = LabelFrame(root, "Eingabe", tk, ttk).set_columnspan(1).set_padding((4, 1)).build()
 
-    # Frame für Datenbankkonfiguration
-    db_config_frame = LabelFrame(input_frame, "OracleDB Konfiguration", tk, ttk).build()
-
     # Labels und Eingabefelder für Datenbankkonfiguration
+    db_config_frame = LabelFrame(input_frame, "OracleDB Konfiguration", tk, ttk).build()
     db_host = create_label_entry(db_config_frame, "Host:", 0)
     db_port = create_label_entry(db_config_frame, "Port:", 1, validate_command=vcmd)
     db_service_name = create_label_entry(db_config_frame, "Service-name:", 2)
     db_username = create_label_entry(db_config_frame, "Username:", 3)
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
-    # Frame für GTFS-Pfad
+    # Elemente für Auswahl des GTFS-Ordners
     gtfs_path_frame = LabelFrame(input_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
-
     gtfs_path = ttk.Entry(gtfs_path_frame)
     gtfs_path.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
-
     ttk.Button(gtfs_path_frame, text="Ordner auswählen", command=select_gtfs_path).grid(row=0, column=1, padx=10, pady=10)
 
-    # Frame für Batch-Size
+    # Eingabe für Batch-Größe
     batch_size_frame = LabelFrame(input_frame, "Batch-Größe", tk, ttk).set_row(2).build()
-
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
-    # Buttons
+    # Buttons für Verwaltung der Konfigurationsdatei
     ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config).grid(row=3, column=0, padx=10, pady=10)
     ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields).grid(row=3, column=1, padx=10, pady=10)
+
+    # Buttons für Starten des Imports und Abbrechen des Imports
     ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_callback(root, stop_thread_var), style="Red.TButton").grid(row=4, column=0, padx=10, pady=10)
     ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton").grid(row=4, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben
     console_frame = LabelFrame(root, "Konsolenausgaben", tk, ttk).set_padding((4, 10)).set_sticky(tk.NSEW).set_column(2).build()
 
-    # Scrollbar hinzufügen
+    # Textfeld für Konsolenausgaben mit Scrollbar
     console_scrollbar = ttk.Scrollbar(console_frame)
     console_scrollbar.grid(row=0, column=1, sticky=tk.NS)
-
-    # Textfeld für Konsolenausgaben
     console_text = tk.Text(console_frame, height=42, width=140, state="disabled", bg="#f7f7f7", yscrollcommand=console_scrollbar.set)
     console_text.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
-
     console_scrollbar.config(command=console_text.yview)
 
     # Checkbox für automatischen Bildlauf
@@ -177,7 +169,8 @@ def start_user_interface(callback):
     sys.stdout = TextRedirector(console_text, "stdout", auto_scroll_var)
     sys.stderr = TextRedirector(console_text, "stderr", auto_scroll_var)
 
-    get_style()
+    # Style für Buttons
+    Style(ttk)
 
     # Verhalten beim Schließen des Fensters definieren
     root.protocol("WM_DELETE_WINDOW", lambda: on_cancel(root, stop_thread_var))
@@ -186,44 +179,3 @@ def start_user_interface(callback):
     root.mainloop()
 
 
-def get_style():
-    style = ttk.Style()
-
-    # Passe den Standard-Stil für alle Buttons an
-    style.configure("TButton",
-                    background="#478ced",
-                    foreground="black",
-                    font=("Arial", 8, "bold"))
-    style.map("TButton",
-            background=[("active", "#3931b5")])
-
-    # Erstelle einen roten Button-Stil
-    style.configure("Red.TButton",
-                    background="#e57373",
-                    foreground="black",
-                    font=("Arial", 10, "bold"),
-                    padding=6,
-                    relief="flat")
-    style.map("Red.TButton",
-            background=[("active", "#ef5350")])
-
-    # Erstelle einen grünen Button-Stil
-    style.configure("Green.TButton",
-                    background="#81c784",
-                    foreground="black",
-                    font=("Arial", 10, "bold"),
-                    padding=6,
-                    relief="flat")
-    style.map("Green.TButton",
-            background=[("active", "#66bb6a")])
-    
-    # Passe den Standard-Stil für alle Eingabefelder an
-    style.configure("TEntry",
-                    background="#f5f5f5",
-                    font=("Arial", 10),
-                    padding=5,
-                    relief="flat")
-    style.map("TEntry",
-            background=[("active", "#e0e0e0")])
-    
-    return style

@@ -138,3 +138,46 @@ class TextRedirector(object):
         for _ in range(num_lines):
             last_line_index = self.widget.index("end-1c linestart")
             self.widget.delete(last_line_index, "end-1c")
+
+
+def Style(ttk):
+    style = ttk.Style()
+
+    # Passe den Standard-Stil für alle Buttons an
+    style.configure("TButton",
+                    background="#478ced",
+                    foreground="black",
+                    font=("Arial", 8, "bold"))
+    style.map("TButton",
+            background=[("active", "#3931b5")])
+
+    # Erstelle einen roten Button-Stil
+    style.configure("Red.TButton",
+                    background="#e57373",
+                    foreground="black",
+                    font=("Arial", 10, "bold"),
+                    padding=6,
+                    relief="flat")
+    style.map("Red.TButton",
+            background=[("active", "#ef5350")])
+
+    # Erstelle einen grünen Button-Stil
+    style.configure("Green.TButton",
+                    background="#81c784",
+                    foreground="black",
+                    font=("Arial", 10, "bold"),
+                    padding=6,
+                    relief="flat")
+    style.map("Green.TButton",
+            background=[("active", "#66bb6a")])
+    
+    # Passe den Standard-Stil für alle Eingabefelder an
+    style.configure("TEntry",
+                    background="#f5f5f5",
+                    font=("Arial", 10),
+                    padding=5,
+                    relief="flat")
+    style.map("TEntry",
+            background=[("active", "#e0e0e0")])
+    
+    return style
