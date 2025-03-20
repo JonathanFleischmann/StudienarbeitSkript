@@ -1,4 +1,4 @@
-from GTFSReadIn.GTFSReadIn import get_table_map_from_GTFSs
+from GTFSReadIn.gtfs_read_in import get_table_map_from_GTFSs
 from ExecuteInserts.execute_inserts import execute_inserts
 from database_connection import get_db_connection
 from UserInput.user_interface import start_user_interface
