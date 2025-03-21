@@ -1,7 +1,7 @@
 import sys
 import csv
 import os
-from GTFSReadIn.preset_values import necessary_gtfs_files_and_attributes, relevant_gtfs_files_and_attributes, id_values
+from preset_values import necessary_gtfs_files_and_attributes, relevant_gtfs_files_and_attributes, id_values
 
 def get_txt_files_in_path(folder_path):
     """

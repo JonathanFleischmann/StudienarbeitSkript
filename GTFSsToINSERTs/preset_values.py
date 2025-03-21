@@ -36,3 +36,73 @@ id_values = {
     "pathways": ["pathway_id"],
     "levels": ["level_id"],
 }
+
+column_names_map = {
+    "agency": {
+        "agency_name": ["name"],
+        "agency_url": ["url"],
+        "agency_lang": ["language"]
+    },
+    "exception_table": {
+        "date": ["date_col"]
+    },
+    "height": {
+        "level_name": ["name"],
+        "elevation": ["above_sea_level"],
+        "level_index": ["floor"]
+    },
+    "path": {
+        "trip_id": ["ride"],
+        "stop_sequence": ["sequence"],
+        "stop_id": ["start_point", "end_point"],
+        "arrival_time": ["arrival_time"],
+        "departure_time": ["departure_time"],
+        "pickup_type": ["enter_type"],
+        "drop_off_type": ["descend_type"],
+        "stop_headsign": ["destination"],
+        "headsign": ["destination"],
+        "from_stop_id": [],
+        "to_stop_id": [],
+        "pathway_mode": ["walk_type"]
+    },
+    "period": {
+        "start_date": ["start_date"],
+        "end_date": ["end_date"]
+    },
+    "ride": {
+        "route_id": ["route"],
+        "service_id": ["period"],
+        "trip_headsign": ["headsign"]
+    },
+    "route": {
+        "route_long_name": ["name"],
+        "route_short_name": ["short_name"],
+        "route_type": ["type"],
+        "route_desc": ["description"],
+        "agency_id": ["agency"]
+    },
+    "traffic_centre": {
+        "stop_name": ["name"],
+        "stop_lat": ["latitude"],
+        "stop_lon": ["longitude"],
+        "location_type": ["location_type"],
+        "parent_station": []
+    },
+    "traffic_point": {
+        "stop_name": ["name"],
+        "stop_lat": ["latitude"],
+        "stop_lon": ["longitude"],
+        "location_type": ["location_type"],
+        "parent_station": ["traffic_centre"],
+        "level_id": ["height"]
+    },
+    "weekdays": {
+        "monday": ["monday"],
+        "tuesday": ["tuesday"],
+        "wednesday": ["wednesday"],
+        "thursday": ["thursday"],
+        "friday": ["friday"],
+        "saturday": ["saturday"],
+        "sunday": ["sunday"]
+    }
+}
