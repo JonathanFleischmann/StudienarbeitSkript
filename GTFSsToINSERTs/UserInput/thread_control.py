@@ -11,5 +11,5 @@ def check_thread(root, stop_thread_var, running_thread):
     if running_thread.is_alive():
         root.after(200, lambda: check_thread(root, stop_thread_var, running_thread))  # In 100ms erneut prüfen
     else:
-        print("Operation abgebrochen")
+        print("\rOperation abgebrochen")
         stop_thread_var.set(False)
