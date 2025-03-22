@@ -70,6 +70,7 @@ class LabelFrame:
 #         return entry
 
 from PIL import Image, ImageTk
+from UserInput.images.resource_path import resource_path
 
 class TextRedirector(object):
     def __init__(self, widget, tag="stdout", auto_scroll_var=None):
@@ -84,15 +85,6 @@ class TextRedirector(object):
 
         # Bind the <MouseWheel> event to detect when the user scrolls
         self.widget.bind("<MouseWheel>", self.on_mouse_wheel)
-
-        # Load emoji images
-        self.emoji_images = {
-            "✅": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/check_mark.png").resize((19, 19), Image.LANCZOS)),
-            "❌": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/cross_mark.png").resize((18, 18), Image.LANCZOS)),
-            "⚠": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/warning.png").resize((16, 16), Image.LANCZOS)),
-            "➕": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/plus.png").resize((16, 16), Image.LANCZOS)),
-            "🔍": ImageTk.PhotoImage(Image.open("GTFSsToINSERTs/UserInput/images/search.png").resize((17, 17), Image.LANCZOS))
-        }
 
     def on_mouse_wheel(self, event):
         # Check if the user has scrolled up
@@ -112,10 +104,7 @@ class TextRedirector(object):
         for i, part in enumerate(parts):
             if i % 2 == 0:
                 for char in part:
-                    if char in self.emoji_images:
-                        self.widget.image_create("end", image=self.emoji_images[char])
-                    else:
-                        self.widget.insert("end", char, (self.tag,))
+                    self.widget.insert("end", char, (self.tag,))
             else:
                 self.widget.insert("end", part, ("bold",))
 
