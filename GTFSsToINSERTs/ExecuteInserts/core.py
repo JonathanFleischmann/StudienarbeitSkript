@@ -1,5 +1,6 @@
 from datetime import datetime
-from preset_values import column_names_map
+from preset_values import column_names_map, column_datatype_map
+from data_storage import DatatypeEnum
 
 def get_str_array(value_array):
     """
@@ -175,4 +176,16 @@ def append_new_columns_and_get_used(for_table_name: str, from_table_columns: lis
             new_columns.append(already_new_column)
     
     return {"new_columns": new_columns, "used_columns": used_columns}
+
+def get_datatypes_for_table(table_name: str) -> dict[str,DatatypeEnum]:
+    """
+    Gibt die Datentypen für alle möglichen Spalten einer Tabelle zurück.
+
+    :param table_name: Name der Tabelle
+    :return: Dict mit den Datentypen der Spalten
+    """
+    if table_name in column_datatype_map:
+        return column_datatype_map[table_name]
+    else:
+        raise ValueError(f"Für die Tabelle {table_name} sind keine Datentypen definiert.")
     

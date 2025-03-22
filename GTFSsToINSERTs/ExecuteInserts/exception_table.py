@@ -25,10 +25,4 @@ def generate_exception_table_database_table_from_gtfs_table(calendar_dates_gtfs_
 
     exception_table_database_table.add_unique_column("date_col")
 
-    exception_table_database_table.set_data_types(
-        {
-            "date_col": DatatypeEnum.DATE
-        }
-    )
-
     return exception_table_database_table

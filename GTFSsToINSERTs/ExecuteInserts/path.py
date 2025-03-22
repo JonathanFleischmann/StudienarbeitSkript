@@ -49,23 +49,6 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
     path_database_table.add_unique_column("walk_type")
     path_database_table.add_unique_column("ride")
 
-    path_database_table.set_data_types(
-        {
-            "min_travel_time": DatatypeEnum.INTEGER,
-            "is_ride": DatatypeEnum.INTEGER,
-            "destination": DatatypeEnum.TEXT,
-            "walk_type": DatatypeEnum.INTEGER,
-            "ride": DatatypeEnum.INTEGER,
-            "start_point": DatatypeEnum.INTEGER,
-            "departure_time": DatatypeEnum.TIME,
-            "enter_type": DatatypeEnum.INTEGER,
-            "end_point": DatatypeEnum.INTEGER,
-            "arrival_time": DatatypeEnum.TIME,
-            "descend_type": DatatypeEnum.INTEGER,
-            "sequence": DatatypeEnum.INTEGER
-        }
-    )
-
     print("🔨 Generiere Tabelle path...")
     total_datasets = stop_times_gtfs_table.get_record_number()
     if pathways_gtfs_table is not None:

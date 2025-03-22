@@ -32,16 +32,4 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
         calendar_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
-    weekdays_database_table.set_data_types(
-        {
-            "monday": DatatypeEnum.INTEGER,
-            "tuesday": DatatypeEnum.INTEGER,
-            "wednesday": DatatypeEnum.INTEGER,
-            "thursday": DatatypeEnum.INTEGER,
-            "friday": DatatypeEnum.INTEGER,
-            "saturday": DatatypeEnum.INTEGER,
-            "sunday": DatatypeEnum.INTEGER
-        }
-    )
-
     return weekdays_database_table

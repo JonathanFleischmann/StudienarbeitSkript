@@ -14,11 +14,5 @@ def generate_stop_type_database_table():
             '3': ["must coordinate with driver to arrange service"]
         }
     )
-    
-    stop_type_database_table.set_data_types(
-        {
-            "type": DatatypeEnum.TEXT
-        }
-    )
 
     return stop_type_database_table

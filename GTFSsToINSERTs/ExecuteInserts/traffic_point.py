@@ -28,17 +28,6 @@ def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table
     traffic_point_database_table.add_unique_column("latitude")
     traffic_point_database_table.add_unique_column("longitude")
 
-    traffic_point_database_table.set_data_types(
-        {
-            "name": DatatypeEnum.TEXT,
-            "latitude": DatatypeEnum.FLOAT,
-            "longitude": DatatypeEnum.FLOAT,
-            "location_type": DatatypeEnum.INTEGER,
-            "traffic_centre": DatatypeEnum.INTEGER,
-            "height": DatatypeEnum.INTEGER
-        }
-    )
-
     # Füge die Datensätze der GTFS-Tabelle stops in die Datenbanktabelle ein
     traffic_point_database_table.set_all_values(
         stops_gtfs_table.get_distinct_values_of_all_records(used_columns)

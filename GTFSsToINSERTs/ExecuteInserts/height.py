@@ -27,12 +27,4 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
         levels_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
-    height_database_table.set_data_types(
-        {
-            "name": DatatypeEnum.TEXT,
-            "above_sea_level": DatatypeEnum.INTEGER,
-            "floor": DatatypeEnum.INTEGER
-        }
-    )
-
     return height_database_table

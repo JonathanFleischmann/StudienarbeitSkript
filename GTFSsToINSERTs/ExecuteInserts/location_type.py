@@ -15,11 +15,5 @@ def generate_location_type_database_table():
             '4': ["boarding area"],
         }
     )
-    
-    location_type_database_table.set_data_types(
-        {
-            "type": DatatypeEnum.TEXT
-        }
-    )
 
     return location_type_database_table

@@ -1,3 +1,5 @@
+from data_storage import DatatypeEnum
+
 relevant_gtfs_files_and_attributes = {
     "agency": ["agency_id", "agency_name", "agency_url", "agency_lang"],
     "calendar": ["service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date"],
@@ -105,5 +107,89 @@ column_names_map = {
         "friday": ["friday"],
         "saturday": ["saturday"],
         "sunday": ["sunday"]
+    }
+}
+
+column_datatype_map = {
+    "agency": {
+        "name": DatatypeEnum.TEXT,
+        "url": DatatypeEnum.TEXT,
+        "language": DatatypeEnum.TEXT
+    },
+    "exception_table": {
+        "date_col": DatatypeEnum.DATE
+    },
+    "height": {
+        "name": DatatypeEnum.TEXT,
+        "above_sea_level": DatatypeEnum.INTEGER,
+        "floor": DatatypeEnum.INTEGER
+    },
+    "location_type": {
+        "type": DatatypeEnum.TEXT
+    },
+    "path": {
+        "min_travel_time": DatatypeEnum.INTEGER,
+        "is_ride": DatatypeEnum.INTEGER,
+        "destination": DatatypeEnum.TEXT,
+        "walk_type": DatatypeEnum.INTEGER,
+        "ride": DatatypeEnum.INTEGER,
+        "start_point": DatatypeEnum.INTEGER,
+        "departure_time": DatatypeEnum.TIME,
+        "enter_type": DatatypeEnum.INTEGER,
+        "end_point": DatatypeEnum.INTEGER,
+        "arrival_time": DatatypeEnum.TIME,
+        "descend_type": DatatypeEnum.INTEGER,
+        "sequence": DatatypeEnum.INTEGER
+    },
+    "period": {
+        "start_date": DatatypeEnum.DATE,
+        "end_date": DatatypeEnum.DATE,
+        "weekdays": DatatypeEnum.INTEGER
+    },
+    "ride_exception": {
+        "ride": DatatypeEnum.INTEGER,
+        "exception_table": DatatypeEnum.INTEGER
+    },
+    "ride": {
+        "route": DatatypeEnum.INTEGER,
+        "period": DatatypeEnum.INTEGER,
+        "headsign": DatatypeEnum.TEXT,
+        "start_time": DatatypeEnum.TIME
+    },
+    "route": {
+        "name": DatatypeEnum.TEXT,
+        "short_name": DatatypeEnum.TEXT,
+        "type": DatatypeEnum.TEXT,
+        "description": DatatypeEnum.TEXT,
+        "agency": DatatypeEnum.INTEGER
+    },
+    "stop_type": {
+        "type": DatatypeEnum.TEXT
+    },
+    "traffic_centre": {
+        "name": DatatypeEnum.TEXT,
+        "latitude": DatatypeEnum.FLOAT,
+        "longitude": DatatypeEnum.FLOAT,
+        "location_type": DatatypeEnum.INTEGER
+    },
+    "traffic_point": {
+        "name": DatatypeEnum.TEXT,
+        "latitude": DatatypeEnum.FLOAT,
+        "longitude": DatatypeEnum.FLOAT,
+        "location_type": DatatypeEnum.INTEGER,
+        "traffic_centre": DatatypeEnum.INTEGER,
+        "height": DatatypeEnum.INTEGER
+    },
+    "walk_type": {
+        "type": DatatypeEnum.TEXT
+    },
+    "weekdays": {
+        "monday": DatatypeEnum.INTEGER,
+        "tuesday": DatatypeEnum.INTEGER,
+        "wednesday": DatatypeEnum.INTEGER,
+        "thursday": DatatypeEnum.INTEGER,
+        "friday": DatatypeEnum.INTEGER,
+        "saturday": DatatypeEnum.INTEGER,
+        "sunday": DatatypeEnum.INTEGER
     }
 }

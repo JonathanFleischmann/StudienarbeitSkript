@@ -17,11 +17,5 @@ def generate_walk_type_database_table():
             '7': ["exit gate"]
         }
     )
-    
-    walk_type_database_table.set_data_types(
-        {
-            "type": DatatypeEnum.TEXT
-        }
-    )
 
     return walk_type_database_table

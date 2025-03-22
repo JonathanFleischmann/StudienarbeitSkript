@@ -11,25 +11,25 @@ class DatatypeEnum(Enum):
 import os
 import copy
 import sys
-from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime
+from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime, get_datatypes_for_table
 
 class DataTable:
     # table_name speichert den Namen der Tabelle
     # columns speichert die Spaltennamen
     # column_values speichert die tatsächlichen Werte mit dem Index der Zeile als Key
-    # data_types speichert die Datentypen der Spalten
+    # data_types speichert allen möglichen Datentypen der Spalten
     # unique_columns speichert die Kombinationen von Spalten, die unique sind
 
     def __init__(self, table_name, columns):
         """
-        Konstruktor, der die Spaltennamen initialisiert und die Map für die Datensätze erstellt.
+        Konstruktor, der die Spaltennamen initialisiert, die Map für die Datensätze erstellt und die Datentypen der möglichen Spalten speichert.
         :param columns: Liste der Spaltennamen (Array)
         """
         self.table_name = table_name
         self.columns = columns  # Array mit den Spaltennamen
         self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
-        self.data_types = {} # Map mit den Datentypen der Spalten
         self.unique_columns = [] # Array mit den Spalten, die zusammen unique sind
+        self.data_types: dict[str,DatatypeEnum] = get_datatypes_for_table(table_name) # Map mit den Datentypen der möglichen Spalten
     
 
     def get_table_name(self):
@@ -164,14 +164,6 @@ class DataTable:
         :param column_values: Map mit den Werten der Spalten
         """
         self.values = values
-
-
-    def set_data_types(self, data_types: dict[str,DatatypeEnum]):
-        """
-        Setzt die Datentypen der Spalten.
-        :param data_types: Map mit den Datentypen der Spalten
-        """
-        self.data_types = data_types
 
 
     def add_column(self, column_name):

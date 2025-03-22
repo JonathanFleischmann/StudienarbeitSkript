@@ -25,12 +25,4 @@ def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
         agency_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
-    agency_database_table.set_data_types(
-        {
-            "name": DatatypeEnum.TEXT,
-            "url": DatatypeEnum.TEXT,
-            "language": DatatypeEnum.TEXT
-        }
-    )
-
     return agency_database_table

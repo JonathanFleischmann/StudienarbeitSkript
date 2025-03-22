@@ -27,15 +27,6 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
         traffic_centre_database_table.add_unique_column("longitude")
         traffic_centre_database_table.add_unique_column("location_type")
 
-        traffic_centre_database_table.set_data_types(
-            {
-                "name": DatatypeEnum.TEXT,
-                "latitude": DatatypeEnum.FLOAT,
-                "longitude": DatatypeEnum.FLOAT,
-                "location_type": DatatypeEnum.INTEGER
-            }
-        )
-
         return traffic_centre_database_table
     
 
@@ -46,15 +37,6 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
     traffic_centre_database_table.add_unique_column("latitude")
     traffic_centre_database_table.add_unique_column("longitude")
     traffic_centre_database_table.add_unique_column("location_type")
-
-    traffic_centre_database_table.set_data_types(
-        {
-            "name": DatatypeEnum.TEXT,
-            "latitude": DatatypeEnum.FLOAT,
-            "longitude": DatatypeEnum.FLOAT,
-            "location_type": DatatypeEnum.INTEGER
-        }
-    )
 
     stops = stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
 
