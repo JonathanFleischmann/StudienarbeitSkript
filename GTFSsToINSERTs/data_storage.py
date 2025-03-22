@@ -1,16 +1,7 @@
-from enum import Enum
-
-class DatatypeEnum(Enum):
-    INTEGER = 1
-    DATE = 2
-    TIME = 3
-    TEXT = 4
-    FLOAT = 5
-
-
 import os
 import copy
 import sys
+from datatype_enum import DatatypeEnum
 from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime, get_datatypes_for_table, get_unique_columns_for_table
 
 class DataTable:
@@ -20,7 +11,7 @@ class DataTable:
     # data_types speichert allen möglichen Datentypen der Spalten
     # unique_columns speichert die Kombinationen von Spalten, die unique sind
 
-    def __init__(self, table_name, columns):
+    def __init__(self, table_name, columns, is_gtfs_table = False):
         """
         Konstruktor, der die Spaltennamen initialisiert, die Map für die Datensätze erstellt, 
         die Spalten, die zusammen unique sind und die Datentypen der möglichen Spalten speichert. 
@@ -30,8 +21,8 @@ class DataTable:
         self.table_name = table_name
         self.columns = columns  # Array mit den Spaltennamen
         self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
-        self.data_types: dict[str,DatatypeEnum] = get_datatypes_for_table(table_name) # Map mit den Datentypen der möglichen Spalten
-        self.unique_columns: list = get_unique_columns_for_table(table_name) # Array mit den Spalten, die zusammen unique sind
+        self.data_types: dict[str,DatatypeEnum] = get_datatypes_for_table(table_name) if not is_gtfs_table else {} # Map mit den Datentypen der möglichen Spalten
+        self.unique_columns: list = get_unique_columns_for_table(table_name) if not is_gtfs_table else [] # Array mit den Spalten, die zusammen unique sind
     
 
     def get_table_name(self):

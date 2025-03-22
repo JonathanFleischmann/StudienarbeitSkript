@@ -1,6 +1,6 @@
 import copy
 import time
-from data_storage import DataTable, DatatypeEnum
+from data_storage import DataTable
 from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h, append_new_columns_and_get_used
 
 

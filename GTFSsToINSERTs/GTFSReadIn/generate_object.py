@@ -57,7 +57,7 @@ def generate_table_object_from_filepath(filepath, filename, stop_thread_var):
                 sys.exit(1)
 
             # Erstelle ein Table-Objekt, das die Daten speichert
-            table = DataTable(filename, list(column_position))
+            table = DataTable(filename, list(column_position), is_gtfs_table=True)
 
             # Gehe alle Zeilen in der txt-Datei ab der zweiten Zeile durch
             linecount = 0

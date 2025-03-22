@@ -1,4 +1,4 @@
-from data_storage import DataTable, DatatypeEnum
+from data_storage import DataTable
 
 
 def generate_ride_exception_database_table_from_gtfs_tables(exception_table_database_table, ride_database_table, trips_gtfs_table, calendar_dates_gtfs_table):

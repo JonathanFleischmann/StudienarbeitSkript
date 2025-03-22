@@ -1,4 +1,4 @@
-from data_storage import DataTable, DatatypeEnum
+from data_storage import DataTable
 
 def generate_location_type_database_table():
 

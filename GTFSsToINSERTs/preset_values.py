@@ -1,4 +1,4 @@
-from data_storage import DatatypeEnum
+from datatype_enum import DatatypeEnum
 
 relevant_gtfs_files_and_attributes = {
     "agency": ["agency_id", "agency_name", "agency_url", "agency_lang"],
