@@ -15,7 +15,6 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
 
     database_table_columns = new_and_used_columns["new_columns"]
     used_columns = new_and_used_columns["used_columns"]
-    # TODO: direction_id?
 
     trip_headsign_found = False
     if "trip_headsign" in trips_gtfs_table_columns:

@@ -10,7 +10,6 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
 
     # Finde heraus, welche Spalten in der DatabaseTabelle stops vorhanden sein werden anhand der GTFSTabelle
     gtfs_table_columns = stops_gtfs_table.get_columns()
-    # TODO: name ist nicht zwangsläufig notwendig, parent_station ebenfalls nicht
 
     new_and_used_columns = append_new_columns_and_get_used("traffic_centre", gtfs_table_columns)
 

@@ -22,7 +22,7 @@ necessary_gtfs_files_and_attributes = {
     "routes": ["route_id", "route_long_name", "route_short_name", "agency_id"],
     "trips": ["trip_id", "route_id", "service_id"],
     "stop_times": ["trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence"],
-    "stops": ["stop_id", "stop_name", "stop_lat", "stop_lon", "location_type", "parent_station"],
+    "stops": ["stop_id", "stop_lat", "stop_lon", "location_type"],
 }
 
 id_values = {
@@ -63,7 +63,9 @@ column_names_map = {
         "headsign": ["destination"],
         "from_stop_id": [],
         "to_stop_id": [],
-        "pathway_mode": ["walk_type"]
+        "pathway_mode": ["walk_type"],
+        "is_bidirectional": [],
+        "traversal_time": []
     },
     "period": {
         "start_date": ["start_date"],

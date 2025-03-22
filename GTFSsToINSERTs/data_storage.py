@@ -48,6 +48,9 @@ class DataTable:
         for column in self.columns:
             if column in self.unique_columns:
                 sorted_unique_columns.append(column)
+        unique_columns_without_value = [column for column in self.unique_columns if column not in self.columns]
+        for column in unique_columns_without_value:
+            sorted_unique_columns.append(column)
         return sorted_unique_columns
 
 
@@ -345,10 +348,6 @@ class DataTable:
             if column not in self.data_types:
                 raise KeyError(f"Der Datentyp für die Spalte {column} wurde nicht gefunden.")
             
-        for unique_column in self.unique_columns:
-            if unique_column not in self.columns:
-                raise KeyError(f"Die Spalte {unique_column} wurde als unique definiert, existiert aber nicht in der Tabelle {self.table_name}.")
-            
         # generiere eine map, die jedem Index zuordnet, ob der Wert in der Spalte unique ist
         unique_columns_map = {}
         for index, column in enumerate(self.columns):
@@ -356,6 +355,8 @@ class DataTable:
                 unique_columns_map[index] = True
             else:
                 unique_columns_map[index] = False
+
+        unique_columns_without_value = [column for column in self.unique_columns if column not in self.columns]
 
         select_map = {}
         # generiere die INSERT-Statements für jeden Datensatz, füge bei TEXT Werten Anführungszeichen hinzu
@@ -377,5 +378,7 @@ class DataTable:
                         new_tuple += (map_to_datetime(value),)
                     else:
                         new_tuple += (value,)
+            for column in unique_columns_without_value:
+                new_tuple += (None,)
             select_map[record_id] = new_tuple
         return select_map

@@ -30,7 +30,6 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
             database_table_columns.append("destination")
 
     used_pathways_columns = []
-    pathways_contains_column_is_bidirectional = False
     if pathways_gtfs_table is not None:
 
         pathways_gtfs_table_columns = pathways_gtfs_table.get_columns()    
@@ -39,12 +38,6 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
         
         database_table_columns = new_and_used_columns_from_pathways["new_columns"]
         used_pathways_columns = new_and_used_columns_from_pathways["used_columns"]
-
-        # TODO: column "traversal_time"
-        
-        if "is_bidirectional" in pathways_gtfs_table_columns:
-            pathways_contains_column_is_bidirectional = True
-            used_pathways_columns.append("is_bidirectional")
 
     print("\n_\npath columns: ", database_table_columns, "\n_\n")
 
@@ -150,8 +143,8 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
             data_map["departure_time"] = None
             data_map["arrival_time"] = None
             data_map["destination"] = None
-            data_map["min_travel_time"] = None
-                    
+
+            data_map["min_travel_time"] = record[pathways_columns_positions["traversal_time"]]
             data_map["walk_type"] = record[pathways_columns_positions["pathway_mode"]]
             data_map["start_point"] = record[pathways_columns_positions["from_stop_id"]]
             data_map["end_point"] = next_path[pathways_columns_positions["to_stop_id"]]
