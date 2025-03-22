@@ -3,6 +3,7 @@ logs/
 GTFSsToINSERTs/__pycache__
 
 GTFSsToINSERTs/ExecuteInserts/__pycache__
+GTFSsToINSERTs/ExecuteInserts/GenerateDatabase/__pycache__
 
 GTFSsToINSERTs/GTFSReadIn/__pycache__
 
