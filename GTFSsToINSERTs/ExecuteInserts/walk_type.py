@@ -1,5 +1,4 @@
-from data_storage import DataTable
-from ExecuteInserts.datatype_enum import DatatypeEnum
+from data_storage import DataTable, DatatypeEnum
 
 def generate_walk_type_database_table():
 

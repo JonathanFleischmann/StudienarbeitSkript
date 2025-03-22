@@ -1,6 +1,4 @@
-import sys
-from data_storage import DataTable
-from ExecuteInserts.datatype_enum import DatatypeEnum
+from data_storage import DataTable, DatatypeEnum
 
 
 def generate_ride_exception_database_table_from_gtfs_tables(exception_table_database_table, ride_database_table, trips_gtfs_table, calendar_dates_gtfs_table):

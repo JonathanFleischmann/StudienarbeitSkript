@@ -1,8 +1,16 @@
+from enum import Enum
+
+class DatatypeEnum(Enum):
+    INTEGER = 1
+    DATE = 2
+    TIME = 3
+    TEXT = 4
+    FLOAT = 5
+
+
 import os
 import copy
 import sys
-from ExecuteInserts.datatype_enum import DatatypeEnum
-
 from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime
 
 class DataTable:
