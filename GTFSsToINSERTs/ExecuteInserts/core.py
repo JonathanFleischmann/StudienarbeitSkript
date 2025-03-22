@@ -1,4 +1,5 @@
 from datetime import datetime
+from preset_values import column_names_map
 
 def get_str_array(value_array):
     """
@@ -149,3 +150,29 @@ def get_time_when_more_than_24_h(time: str) -> str:
     
     except Exception as e:
         return f"Fehler beim Ausrechnen einer Zeit: {str(e)}"
+    
+
+def append_new_columns_and_get_used(for_table_name: str, from_table_columns: list[str], already_new_columns: list[str] = []) -> dict[str,list[str]]:
+    """
+    Fügt die neuen Spalten hinzu, die in der Datenbanktabelle noch nicht vorhanden sind.
+
+    :param for_table_name: Name der Datenbanktabelle, für die die Spalten hinzugefügt werden sollen
+    :param from_table_columns: Spalten der GTFS-Tabelle, die hinzugefügt werden sollen
+    :param already_new_columns: Bereits hinzugefügte Spalten
+    :return: Dict mit den hinzugefügten Spalten und den verwendeten Spalten
+    """
+    new_columns = []
+    used_columns = []
+    if for_table_name in column_names_map:
+        for old_column in from_table_columns:
+            if old_column in column_names_map[for_table_name]:
+                used_columns.append(old_column)
+                for new_column in column_names_map[for_table_name][old_column]:
+                    new_columns.append(new_column)
+    
+    for already_new_column in already_new_columns:
+        if already_new_column not in new_columns:
+            new_columns.append(already_new_column)
+    
+    return {"new_columns": new_columns, "used_columns": used_columns}
+    

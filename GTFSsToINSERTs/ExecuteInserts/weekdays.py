@@ -1,6 +1,6 @@
-import sys
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
+from ExecuteInserts.core import append_new_columns_and_get_used
 
 
 def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
@@ -11,31 +11,11 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
 
     # Finde heraus, welche Spalten in der DatabaseTabelle route vorhanden sein werden anhand der GTFSTabelle
     gtfs_table_columns = calendar_gtfs_table.get_columns()
-    database_table_columns = []
 
+    new_and_used_columns = append_new_columns_and_get_used("weekdays", gtfs_table_columns)
 
-    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
-    necessary_values_found = {
-        "monday": False,
-        "tuesday": False,
-        "wednesday": False,
-        "thursday": False,
-        "friday": False,
-        "saturday": False,
-        "sunday": False
-    }
-    used_columns = []
-    for column in gtfs_table_columns:
-        if column in necessary_values_found:
-            database_table_columns.append(column)
-            necessary_values_found[column] = True
-            used_columns.append(column)
-    
-    # Überprüfe 
-    for necessary_value, found in necessary_values_found.items():
-        if not found:
-            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle routes gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-            sys.exit(1)
+    database_table_columns = new_and_used_columns["new_columns"]
+    used_columns = new_and_used_columns["used_columns"]
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
     weekdays_database_table = DataTable("weekdays", database_table_columns)

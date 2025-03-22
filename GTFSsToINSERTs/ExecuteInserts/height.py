@@ -1,6 +1,6 @@
-import sys
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
+from ExecuteInserts.core import append_new_columns_and_get_used
 
 
 def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
@@ -10,21 +10,11 @@ def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
 
     # Finde heraus, welche Spalten in der DatabaseTabelle agency vorhanden sein werden anhand der GTFSTabelle
     gtfs_table_columns = levels_gtfs_table.get_columns()
-    database_table_columns = []
 
+    new_and_used_columns = append_new_columns_and_get_used("height", gtfs_table_columns)
 
-    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
-    used_columns = []
-    for column in gtfs_table_columns:
-        if column == "level_name":
-            database_table_columns.append("name")
-            used_columns.append(column)
-        elif column == "elevation":
-            database_table_columns.append("above_sea_level")
-            used_columns.append(column)
-        elif column == "level_index":
-            database_table_columns.append("floor")
-            used_columns.append(column)
+    database_table_columns = new_and_used_columns["new_columns"]
+    used_columns = new_and_used_columns["used_columns"]
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle agency
     height_database_table = DataTable("height", database_table_columns)

@@ -85,8 +85,7 @@ column_names_map = {
         "stop_name": ["name"],
         "stop_lat": ["latitude"],
         "stop_lon": ["longitude"],
-        "location_type": ["location_type"],
-        "parent_station": []
+        "location_type": ["location_type"]
     },
     "traffic_point": {
         "stop_name": ["name"],

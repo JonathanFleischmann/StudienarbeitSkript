@@ -193,7 +193,7 @@ class DataTable:
         :raises ValueError: Wenn die Länge der Werte nicht mit der Anzahl der Spalten übereinstimmt
         """
         if len(values) != len(self.columns):
-            raise ValueError(f"Der Datensatz benötigt {len(self.columns)} Werte, aber {len(values)} wurden angegeben.")
+            raise ValueError(f"Der Datensatz benötigt {len(self.columns)} Werte ({self.columns}), aber {len(values)} wurden angegeben ({values}).")
         self.values[record_id] = values
 
     

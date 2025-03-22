@@ -1,6 +1,6 @@
-import sys
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
+from ExecuteInserts.core import append_new_columns_and_get_used
 
 
 def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_database_table, route_database_table, stop_times_gtfs_table):
@@ -10,40 +10,21 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
 
     # Finde heraus, welche Spalten in der DatabaseTabelle route vorhanden sein werden anhand der GTFSTabelle
     trips_gtfs_table_columns = trips_gtfs_table.get_columns()
-    database_table_columns = []
+    stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
 
+    new_and_used_columns = append_new_columns_and_get_used("ride", trips_gtfs_table_columns)
 
-    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle 
+    database_table_columns = new_and_used_columns["new_columns"]
+    used_columns = new_and_used_columns["used_columns"]
+    # TODO: direction_id?
 
-    # überprüfe, ob die notwendigen Spalten in der GTFS-Tabelle trips vorhanden sind    
-    # direction_id_found = False
-    necessary_values_found = {
-        "route_id": False,
-        "service_id": False
-    }
-    used_columns = []
     trip_headsign_found = False
-    for column in trips_gtfs_table_columns:
-        if column == "route_id":
-            database_table_columns.append("route")
-            necessary_values_found["route_id"] = True
-            used_columns.append(column)
-        elif column == "service_id":
-            database_table_columns.append("period")
-            necessary_values_found["service_id"] = True
-            used_columns.append(column)
-        # elif column == "direction_id":
-            # direction_id_found = True
-        elif column == "trip_headsign":
-            database_table_columns.append("headsign")
-            used_columns.append(column)
-            trip_headsign_found = True
-    
-    # Überprüfe
-    for necessary_value, found in necessary_values_found.items():
-        if not found:
-            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle trips gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-            sys.exit(1)
+    if "trip_headsign" in trips_gtfs_table_columns:
+        trip_headsign_found = True
+
+    stop_times_headsign_found = False
+    if "stop_headsign" in stop_times_gtfs_table_columns:
+        stop_times_headsign_found = True
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
     ride_database_table = DataTable("ride", database_table_columns)
@@ -78,19 +59,7 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         period_new_id = period_id_map[period[0]][0]
         ride_database_table.set_value(record_id, "period", period_new_id)
 
-    # überprüfe, ob die Spalten "stop_sequence", "trip_id" und "departure_time" in der GTFS-Tabelle stop_times vorhanden sind
-    stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
-    stop_times_headsign_found = False
-    if "stop_sequence" not in stop_times_gtfs_table_columns:
-        print("Die Spalte 'stop_sequence' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-        sys.exit(1)
-    if "departure_time" not in stop_times_gtfs_table_columns:
-        print("Die Spalte 'departure_time' wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-        sys.exit(1)
-    if "stop_headsign" in stop_times_gtfs_table_columns:
-        stop_times_headsign_found = True
-
-    # Füge die Spalte "departure_time" zur Datenbanktabelle hinzu
+    # Füge die Spalte "start_time" zur Datenbanktabelle hinzu
     ride_database_table.add_column("start_time")
 
     # Weise jedem Ride die Startzeit hinzu

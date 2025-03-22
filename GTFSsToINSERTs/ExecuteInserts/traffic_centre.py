@@ -1,6 +1,7 @@
 import sys
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
+from ExecuteInserts.core import append_new_columns_and_get_used
 
 
 def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_from_stops(stops_gtfs_table, stop_times_gtfs_table, location_type_database_table):
@@ -10,42 +11,16 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
 
     # Finde heraus, welche Spalten in der DatabaseTabelle stops vorhanden sein werden anhand der GTFSTabelle
     gtfs_table_columns = stops_gtfs_table.get_columns()
-    database_table_columns = []
+    # TODO: name ist nicht zwangsläufig notwendig, parent_station ebenfalls nicht
+
+    new_and_used_columns = append_new_columns_and_get_used("traffic_centre", gtfs_table_columns)
+
+    database_table_columns = new_and_used_columns["new_columns"]
+    used_columns = new_and_used_columns["used_columns"]
 
 
-    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
-    necessary_values_found = {
-        "stop_name": False,
-        "stop_lat": False,
-        "stop_lon": False,
-        "location_type": False,
-        "parent_station": False
-    }
-    used_columns = []
-    for column in gtfs_table_columns:
-        if column == "stop_name":
-            database_table_columns.append("name")
-            necessary_values_found["stop_name"] = True
-            used_columns.append(column)
-        elif column == "stop_lat":
-            database_table_columns.append("latitude")
-            necessary_values_found["stop_lat"] = True
-            used_columns.append(column)
-        elif column == "stop_lon":
-            database_table_columns.append("longitude")
-            necessary_values_found["stop_lon"] = True
-            used_columns.append(column)
-        elif column == "location_type":
-            database_table_columns.append("location_type")
-            necessary_values_found["location_type"] = True
-            used_columns.append(column)
-        elif column == "parent_station":
-            necessary_values_found["parent_station"] = True
-    
-
-
-    if not necessary_values_found["parent_station"]:
-        print(f"Es wurden keine Verknüpfungen zu Verkehrsknotenpunkten gefunden", file=sys.stderr)
+    if "parent_station" not in gtfs_table_columns:
+        print(f"Es wurden keine Verknüpfungen zu zentralen Verkehrsknotenpunkten gefunden", file=sys.stderr)
         
         traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
         
@@ -64,14 +39,7 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
         )
 
         return traffic_centre_database_table
-
-
-
-    # Überprüfe 
-    for necessary_value, found in necessary_values_found.items():
-        if not found:
-            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle stops gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-            sys.exit(1)
+    
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
     traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)

@@ -1,6 +1,6 @@
-import sys
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
+from ExecuteInserts.core import append_new_columns_and_get_used
 
 
 def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_database_table):
@@ -10,41 +10,11 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
 
     # Finde heraus, welche Spalten in der DatabaseTabelle route vorhanden sein werden anhand der GTFSTabelle
     gtfs_table_columns = routes_gtfs_table.get_columns()
-    database_table_columns = []
-
-
-    # Erstelle eine Liste mit den Spaltennamen der Datenbanktabelle
-    necessary_values_found = {
-        "route_long_name": False,
-        "route_short_name": False,
-        "agency_id": False
-    }
-    used_columns = []
-    for column in gtfs_table_columns:
-        if column == "route_long_name":
-            database_table_columns.append("name")
-            necessary_values_found["route_long_name"] = True
-            used_columns.append(column)
-        elif column == "route_short_name":
-            database_table_columns.append("short_name")
-            necessary_values_found["route_short_name"] = True
-            used_columns.append(column)
-        elif column == "route_type":
-            database_table_columns.append("type")
-            used_columns.append(column)
-        elif column == "route_desc":
-            database_table_columns.append("description")
-            used_columns.append(column)
-        elif column == "agency_id":
-            database_table_columns.append("agency")
-            necessary_values_found["agency_id"] = True
-            used_columns.append(column)
     
-    # Überprüfe 
-    for necessary_value, found in necessary_values_found.items():
-        if not found:
-            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle routes gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-            sys.exit(1)
+    new_and_used_columns = append_new_columns_and_get_used("route", gtfs_table_columns)
+
+    database_table_columns = new_and_used_columns["new_columns"]
+    used_columns = new_and_used_columns["used_columns"]
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
     route_database_table = DataTable("route", database_table_columns)

@@ -1,9 +1,8 @@
-import sys
 import copy
 import time
 from data_storage import DataTable
 from ExecuteInserts.datatype_enum import DatatypeEnum
-from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h
+from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h, append_new_columns_and_get_used
 
 
 def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var):
@@ -12,94 +11,43 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
     """
 
     stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
-    database_table_columns = []
 
-    destination_in_stop_times = False
-    necessary_values_found = {
-        "trip_id": False,
-        "stop_sequence": False,
-        "stop_id": False,
-        "arrival_time": False,
-        "departure_time": False
-    }
-    used_stop_times_columns = []
-    for column in stop_times_gtfs_table_columns:
-        if column == "trip_id":
-            database_table_columns.append("ride")
-            necessary_values_found[column] = True
-            used_stop_times_columns.append(column)
-        elif column == "stop_sequence":
-            database_table_columns.append("sequence")
-            necessary_values_found[column] = True
-            used_stop_times_columns.append(column)
-        elif column == "stop_id":
-            database_table_columns.append("start_point")
-            database_table_columns.append("end_point")
-            necessary_values_found[column] = True
-            used_stop_times_columns.append(column)
-        elif column == "arrival_time":
-            database_table_columns.append("arrival_time")
-            necessary_values_found[column] = True
-            used_stop_times_columns.append(column)
-        elif column == "departure_time":
-            database_table_columns.append("departure_time")
-            necessary_values_found[column] = True
-            used_stop_times_columns.append(column)
-        elif column == "pickup_type":
-            database_table_columns.append("enter_type")
-            used_stop_times_columns.append(column)
-        elif column == "drop_off_type":
-            database_table_columns.append("descend_type")
-            used_stop_times_columns.append(column)
-        elif column == "stop_headsign":
-            database_table_columns.append("destination")
-            used_stop_times_columns.append(column)
-            destination_in_stop_times = True
-    
-    # Überprüfe
-    for necessary_value, found in necessary_values_found.items():
-        if not found:
-            print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle stop_times gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-            sys.exit(1)
+    new_and_used_columns_from_stop_times = append_new_columns_and_get_used("path", stop_times_gtfs_table_columns)
+
+    database_table_columns = new_and_used_columns_from_stop_times["new_columns"]
+    used_stop_times_columns = new_and_used_columns_from_stop_times["used_columns"]
+
 
     database_table_columns.append("is_ride")
     database_table_columns.append("min_travel_time")
 
+    destination_in_stop_times = False
     destination_in_ride = False
-    if not destination_in_stop_times and "headsign" in ride_database_table.get_columns():
-        database_table_columns.append("destination")
+    if "stop_headsign" in stop_times_gtfs_table_columns:
+        destination_in_stop_times = True
+    if "headsign" in ride_database_table.get_columns():
         destination_in_ride = True
+        if not destination_in_stop_times:
+            database_table_columns.append("destination")
 
     used_pathways_columns = []
-    if pathways_gtfs_table is not None :
+    pathways_contains_column_is_bidirectional = False
+    if pathways_gtfs_table is not None:
 
         pathways_gtfs_table_columns = pathways_gtfs_table.get_columns()    
 
-        necessary_values_found = {
-            "from_stop_id": False,
-            "to_stop_id": False,
-            "pathway_mode": False
-        }
-        for column in pathways_gtfs_table_columns:
-            if column == "from_stop_id":
-                necessary_values_found[column] = True
-                used_pathways_columns.append(column)
-            elif column == "to_stop_id":
-                necessary_values_found[column] = True
-                used_pathways_columns.append(column)
-            elif column == "pathway_mode":
-                database_table_columns.append("walk_type")
-                necessary_values_found[column] = True
-                used_pathways_columns.append(column)
-            elif column == "is_bidirectional":
-                used_pathways_columns.append(column)
-
+        new_and_used_columns_from_pathways = append_new_columns_and_get_used("path", pathways_gtfs_table_columns, already_new_columns = database_table_columns)
         
-        # Überprüfe
-        for necessary_value, found in necessary_values_found.items():
-            if not found:
-                print(f"Die Spalte {necessary_value} wurde nicht in der GTFS-Tabelle pathways gefunden. Diese Spalte fehlt im GTFS-File", file=sys.stderr)
-                sys.exit(1)
+        database_table_columns = new_and_used_columns_from_pathways["new_columns"]
+        used_pathways_columns = new_and_used_columns_from_pathways["used_columns"]
+
+        # TODO: column "traversal_time"
+        
+        if "is_bidirectional" in pathways_gtfs_table_columns:
+            pathways_contains_column_is_bidirectional = True
+            used_pathways_columns.append("is_bidirectional")
+
+    print("\n_\npath columns: ", database_table_columns, "\n_\n")
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle path
     path_database_table = DataTable("path", database_table_columns)
