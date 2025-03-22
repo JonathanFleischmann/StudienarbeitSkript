@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_agency_database_table_from_gtfs_table(agency_gtfs_table):
+def generate_agency_database_table(agency_gtfs_table):
     """
     Bildet die GTFS-Tabelle 'agency' auf die Datenbank-Tabelle 'agency' ab.
     

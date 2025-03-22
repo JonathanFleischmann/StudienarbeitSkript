@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_database_table):
+def generate_route_database_table(routes_gtfs_table, agency_database_table):
     """
     Generiert die Datenbank-Tabelle 'route' aus der GTFS-Tabelle 'routes' und setzt die Foreign-Reference auf die Tabelle 'agency'.
     

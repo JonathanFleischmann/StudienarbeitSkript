@@ -1,7 +1,7 @@
 from data_storage import DataTable 
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_traffic_point_database_table_from_stops_gtfs_table(stops_gtfs_table, traffic_centre_database_table, location_type_database_table, height_database_table):
+def generate_traffic_point_database_table(stops_gtfs_table, traffic_centre_database_table, location_type_database_table, height_database_table):
     """
     Generiert die Datenbank-Tabelle 'traffic_point' aus der GTFS-Tabelle 'stops' und setzt die Referenzen auf die Tabellen 'traffic_centre', 'location_type' und 'height'.
     

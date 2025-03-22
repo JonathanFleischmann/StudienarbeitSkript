@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_exception_table_database_table_from_gtfs_table(calendar_dates_gtfs_table):
+def generate_exception_table_database_table(calendar_dates_gtfs_table):
     """
     Bildet die GTFS-Tabelle 'calendar_dates' auf die Datenbank-Tabelle 'exception_table' ab.
     

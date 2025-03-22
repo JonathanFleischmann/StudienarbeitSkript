@@ -3,7 +3,7 @@ import time
 from data_storage import DataTable
 from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h, append_new_columns_and_get_used
 
-def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var):
+def generate_path_database_table(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var):
     """
     Generiert die Datenbank-Tabelle 'path' aus den GTFS-Tabellen 'stop_times' und 'pathways' sowie den Datenbank-Tabellen 'ride', 'traffic_point', 'stop_type' und 'walk_type'.
     

@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_database_table, route_database_table, stop_times_gtfs_table):
+def generate_ride_database_table(trips_gtfs_table, period_database_table, route_database_table, stop_times_gtfs_table):
     """
     Generiert die Datenbank-Tabelle 'ride' aus den GTFS-Tabellen 'trips' und 'stop_times' sowie den Datenbank-Tabellen 'period' und 'route'.
     

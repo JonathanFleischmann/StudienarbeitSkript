@@ -1,6 +1,6 @@
 from data_storage import DataTable
 
-def generate_ride_exception_database_table_from_gtfs_tables(exception_table_database_table, ride_database_table, trips_gtfs_table, calendar_dates_gtfs_table):
+def generate_ride_exception_database_table(exception_table_database_table, ride_database_table, trips_gtfs_table, calendar_dates_gtfs_table):
     """
     Generiert die Datenbank-Tabelle 'ride_exception' aus den GTFS-Tabellen 'trips' und 'calendar_dates' sowie den Datenbank-Tabellen 'exception_table' und 'ride'.
     

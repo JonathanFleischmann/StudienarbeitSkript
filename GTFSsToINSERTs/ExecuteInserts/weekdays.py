@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
+def generate_weekdays_database_table(calendar_gtfs_table):
     """
     Extrahiert die Wochentag-Kombinationen aus der GTFS-Tabelle 'calendar' und bildet sie auf die Datenbank-Tabelle 'weekdays' ab.
     

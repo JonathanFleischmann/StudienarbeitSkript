@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays_database_table):
+def generate_period_database_table(calendar_gtfs_table, weekdays_database_table):
     """
     Generiert die Datenbank-Tabelle 'period' aus der GTFS-Tabelle 'calendar' und setzt die Referenz auf die Tabelle 'weekdays'.
     

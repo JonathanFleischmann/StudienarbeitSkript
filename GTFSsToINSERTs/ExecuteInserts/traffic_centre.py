@@ -2,7 +2,7 @@ import sys
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_from_stops(stops_gtfs_table, stop_times_gtfs_table, location_type_database_table):
+def generate_traffic_centre_database_table(stops_gtfs_table, stop_times_gtfs_table, location_type_database_table):
     """
     Generiert die Datenbank-Tabelle 'traffic_centre' aus den GTFS-Tabellen 'stops' und 'stop_times' und entfernt Zentren aus den Haltestellen.
     

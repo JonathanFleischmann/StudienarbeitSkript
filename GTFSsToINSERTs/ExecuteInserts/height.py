@@ -1,7 +1,7 @@
 from data_storage import DataTable
 from ExecuteInserts.core import append_new_columns_and_get_used
 
-def generate_height_database_table_from_gtfs_table(levels_gtfs_table):
+def generate_height_database_table(levels_gtfs_table):
     """
     Bildet die GTFS-Tabelle 'levels' auf die Datenbank-Tabelle 'height' ab.
     
