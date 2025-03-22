@@ -22,7 +22,9 @@ class DataTable:
 
     def __init__(self, table_name, columns):
         """
-        Konstruktor, der die Spaltennamen initialisiert, die Map für die Datensätze erstellt und die Datentypen der möglichen Spalten speichert.
+        Konstruktor, der die Spaltennamen initialisiert, die Map für die Datensätze erstellt, 
+        die Spalten, die zusammen unique sind und die Datentypen der möglichen Spalten speichert. 
+        :param table_name: Der Name der Tabelle
         :param columns: Liste der Spaltennamen (Array)
         """
         self.table_name = table_name
