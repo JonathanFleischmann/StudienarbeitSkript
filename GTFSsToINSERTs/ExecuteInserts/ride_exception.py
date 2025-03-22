@@ -39,7 +39,4 @@ def generate_ride_exception_database_table_from_gtfs_tables(exception_table_data
 
     ride_exception_database_table.set_all_values(exception_table_data)
 
-    ride_exception_database_table.add_unique_column("ride")
-    ride_exception_database_table.add_unique_column("exception_table")
-
     return ride_exception_database_table

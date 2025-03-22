@@ -4,8 +4,6 @@ def generate_stop_type_database_table():
 
     stop_type_database_table = DataTable("stop_type", ["type"])
 
-    stop_type_database_table.add_unique_column("type")
-
     stop_type_database_table.set_all_values(
         {
             '0': ["regular stop"],

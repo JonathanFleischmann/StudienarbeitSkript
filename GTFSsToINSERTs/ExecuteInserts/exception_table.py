@@ -23,6 +23,4 @@ def generate_exception_table_database_table_from_gtfs_table(calendar_dates_gtfs_
         calendar_dates_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
-    exception_table_database_table.add_unique_column("date_col")
-
     return exception_table_database_table

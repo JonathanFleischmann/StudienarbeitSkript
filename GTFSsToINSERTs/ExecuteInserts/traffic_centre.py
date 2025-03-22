@@ -21,22 +21,12 @@ def generate_traffic_centre_database_table_from_gtfs_tables_and_remove_centres_f
         print(f"Es wurden keine Verknüpfungen zu zentralen Verkehrsknotenpunkten gefunden", file=sys.stderr)
         
         traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
-        
-        traffic_centre_database_table.add_unique_column("name")
-        traffic_centre_database_table.add_unique_column("latitude")
-        traffic_centre_database_table.add_unique_column("longitude")
-        traffic_centre_database_table.add_unique_column("location_type")
 
         return traffic_centre_database_table
     
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle 
     traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
-
-    traffic_centre_database_table.add_unique_column("name")
-    traffic_centre_database_table.add_unique_column("latitude")
-    traffic_centre_database_table.add_unique_column("longitude")
-    traffic_centre_database_table.add_unique_column("location_type")
 
     stops = stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
 

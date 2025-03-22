@@ -43,11 +43,6 @@ def generate_path_database_table_from_gtfs_tables(stop_times_gtfs_table, pathway
 
     # Erstelle ein DatabaseTable-Objekt für die Tabelle path
     path_database_table = DataTable("path", database_table_columns)
-    
-    path_database_table.add_unique_column("start_point")
-    path_database_table.add_unique_column("end_point")
-    path_database_table.add_unique_column("walk_type")
-    path_database_table.add_unique_column("ride")
 
     print("🔨 Generiere Tabelle path...")
     total_datasets = stop_times_gtfs_table.get_record_number()

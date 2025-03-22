@@ -110,7 +110,7 @@ column_names_map = {
     }
 }
 
-column_datatype_map = {
+column_datatype_map: dict[str,dict[str,DatatypeEnum]] = {
     "agency": {
         "name": DatatypeEnum.TEXT,
         "url": DatatypeEnum.TEXT,
@@ -192,4 +192,21 @@ column_datatype_map = {
         "saturday": DatatypeEnum.INTEGER,
         "sunday": DatatypeEnum.INTEGER
     }
+}
+
+unique_column_map: dict[list[str]] = {
+    "agency": ["name"],
+    "exception_table": ["date_col"],
+    "height": ["name", "above_sea_level", "floor"],
+    "location_type": ["type"],
+    "path": ["start_point", "end_point", "walk_type", "ride"],
+    "period": ["start_date", "end_date", "weekdays"],
+    "ride_exception": ["ride", "exception_table"],
+    "ride": ["route", "period", "start_time"],
+    "route": ["name", "agency"],
+    "stop_type": ["type"],
+    "traffic_centre": ["name", "latitude", "longitude", "location_type"],
+    "traffic_point": ["latitude", "longitude"],
+    "walk_type": ["type"],
+    "weekdays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 }

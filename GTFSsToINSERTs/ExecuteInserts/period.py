@@ -31,10 +31,6 @@ def generate_period_database_table_from_gtfs_table(calendar_gtfs_table, weekdays
     for record_id, record in weekdays_database_table.get_distinct_values_of_all_records(["id"]).items():
         period_database_table.set_value(record_id, "weekdays", record[0])
 
-    period_database_table.add_unique_column("start_date")
-    period_database_table.add_unique_column("end_date")
-    period_database_table.add_unique_column("weekdays")
-
     # ersetze die Date-Werte durch die mit Oracle kompatiblen Werte mithilfe der Methode map_to_oracle_date aus core.py
     # period_database_table.apply_map_function_to_column("start_date", map_to_oracle_date)
     # period_database_table.apply_map_function_to_column("end_date", map_to_oracle_date)

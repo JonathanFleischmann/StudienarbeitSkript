@@ -19,14 +19,6 @@ def generate_weekdays_database_table_from_gtfs_table(calendar_gtfs_table):
     # Erstelle ein DatabaseTable-Objekt für die Tabelle route
     weekdays_database_table = DataTable("weekdays", database_table_columns)
 
-    weekdays_database_table.add_unique_column("monday")
-    weekdays_database_table.add_unique_column("tuesday")
-    weekdays_database_table.add_unique_column("wednesday")
-    weekdays_database_table.add_unique_column("thursday")
-    weekdays_database_table.add_unique_column("friday")
-    weekdays_database_table.add_unique_column("saturday")
-    weekdays_database_table.add_unique_column("sunday")
-
     # Füge die Datensätze der GTFS-Tabelle route in die Datenbanktabelle ein
     weekdays_database_table.set_all_values(
         calendar_gtfs_table.get_distinct_values_of_all_records(used_columns)

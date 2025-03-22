@@ -1,5 +1,5 @@
 from datetime import datetime
-from preset_values import column_names_map, column_datatype_map
+from preset_values import column_names_map, column_datatype_map, unique_column_map
 from data_storage import DatatypeEnum
 
 def get_str_array(value_array):
@@ -188,4 +188,16 @@ def get_datatypes_for_table(table_name: str) -> dict[str,DatatypeEnum]:
         return column_datatype_map[table_name]
     else:
         raise ValueError(f"Für die Tabelle {table_name} sind keine Datentypen definiert.")
+    
+def get_unique_columns_for_table(table_name: str) -> list[str]:
+    """
+    Gibt die eindeutigen Spalten einer Tabelle zurück.
+
+    :param table_name: Name der Tabelle
+    :return: Liste mit den eindeutigen Spalten
+    """
+    if table_name in unique_column_map:
+        return unique_column_map[table_name]
+    else:
+        raise ValueError(f"Für die Tabelle {table_name} sind keine eindeutigen Spalten definiert.")
     

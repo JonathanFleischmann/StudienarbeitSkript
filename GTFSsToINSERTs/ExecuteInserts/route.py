@@ -22,10 +22,7 @@ def generate_route_database_table_from_gtfs_table(routes_gtfs_table, agency_data
     route_database_table.set_all_values(
         routes_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
-
-    route_database_table.add_unique_column("name")
-    route_database_table.add_unique_column("agency")
-
+    
     # ersetze die agency_id aus dem gtfs-file durch die neu generierte id der agency
     agency_id_map = agency_database_table.get_distinct_values_of_all_records(["id"])
     for record_id, agency in route_database_table.get_distinct_values_of_all_records(["agency"]).items():

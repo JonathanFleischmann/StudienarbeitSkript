@@ -11,7 +11,7 @@ class DatatypeEnum(Enum):
 import os
 import copy
 import sys
-from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime, get_datatypes_for_table
+from ExecuteInserts.core import get_str_array, map_to_date, map_to_datetime, get_datatypes_for_table, get_unique_columns_for_table
 
 class DataTable:
     # table_name speichert den Namen der Tabelle
@@ -28,8 +28,8 @@ class DataTable:
         self.table_name = table_name
         self.columns = columns  # Array mit den Spaltennamen
         self.values = {}  # Map (Dictionary) mit ID als Key und Array der Werte als Value
-        self.unique_columns = [] # Array mit den Spalten, die zusammen unique sind
         self.data_types: dict[str,DatatypeEnum] = get_datatypes_for_table(table_name) # Map mit den Datentypen der möglichen Spalten
+        self.unique_columns: list = get_unique_columns_for_table(table_name) # Array mit den Spalten, die zusammen unique sind
     
 
     def get_table_name(self):
@@ -175,18 +175,6 @@ class DataTable:
         if column_name in self.columns:
             raise KeyError(f"Die Spalte '{column_name}' existiert bereits.")
         self.columns.append(column_name)
-
-
-    def add_unique_column(self, unique_column):
-        """
-        fügt eine neue Spalte hinzu, die in Kombination mit den anderen Spalten unique sein muss
-        :param unique_column: Spaltenname, der hinzugefügt werden soll
-        :raises KeyError: Wenn die Spalte bereits als unique definiert ist
-        """
-        if unique_column in self.unique_columns:
-            raise KeyError(f"Die Spalte {unique_column} ist bereits als unique in der Tabelle {self.table_name} definiert.")
-        self.unique_columns.append(unique_column)
-    
     
     def add_record(self, record_id, values):
         """

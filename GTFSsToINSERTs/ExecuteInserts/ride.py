@@ -32,10 +32,6 @@ def generate_ride_database_table_from_gtfs_tables(trips_gtfs_table, period_datab
         trips_gtfs_table.get_distinct_values_of_all_records(used_columns)
     )
 
-    ride_database_table.add_unique_column("route")
-    ride_database_table.add_unique_column("period")
-    ride_database_table.add_unique_column("start_time")
-
     # ersetze die route_id aus dem gtfs-file durch die neu generierte id der route-table
     route_id_map = route_database_table.get_distinct_values_of_all_records(["id"])
     for record_id, route in ride_database_table.get_distinct_values_of_all_records(["route"]).items():
