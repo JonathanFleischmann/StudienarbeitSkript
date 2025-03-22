@@ -8,3 +8,9 @@ GTFSsToINSERTs/ExecuteInserts/GenerateDatabase/__pycache__
 GTFSsToINSERTs/GTFSReadIn/__pycache__
 
 GTFSsToINSERTs/UserInput/__pycache__
+
+main.spec
+
+dist/main
+
+build
