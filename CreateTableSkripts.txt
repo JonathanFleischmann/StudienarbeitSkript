@@ -85,7 +85,7 @@ CREATE TABLE ride (
                       period NUMBER NOT NULL,
 		      headsign VARCHAR2(200),
 		      start_time TIMESTAMP NOT NULL,
-                      unique_ride UNIQUE (route, period, start_time),
+                      CONSTRAINT unique_ride UNIQUE (route, period, start_time),
                       CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
                       CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
 );
@@ -93,13 +93,13 @@ CREATE TABLE ride (
 
 CREATE TABLE exception_table (
                                  id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                                 date_col DATE UNIQUE NOT NULL
+                                 exception_date DATE UNIQUE NOT NULL
 );
 CREATE OR REPLACE TRIGGER exception_table_ensure_date_with_default_time
     BEFORE INSERT OR UPDATE ON exception_table
     FOR EACH ROW
 BEGIN
-    :NEW.date_col := TRUNC(:NEW.date_col);
+    :NEW.exception_date := TRUNC(:NEW.exception_date);
 END;
 CREATE TABLE ride_exception (
                                 ride NUMBER NOT NULL,
@@ -122,11 +122,11 @@ CREATE TABLE height (
 CREATE TABLE traffic_centre (
                                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                                 name VARCHAR2(100),
-                                type NUMBER NOT NULL,
+                                location_type NUMBER NOT NULL,
                                 latitude NUMBER(20, 15),
                                 longitude NUMBER(20, 15),
                                 CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
-                                CONSTRAINT fk_traffic_centre_type FOREIGN KEY (type) REFERENCES location_type(id)
+                                CONSTRAINT fk_traffic_centre_type FOREIGN KEY (location_type) REFERENCES location_type(id)
 );
 CREATE TABLE traffic_point (
                                id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

@@ -46,7 +46,7 @@ column_names_map = {
         "agency_lang": ["language"]
     },
     "exception_table": {
-        "date": ["date_col"]
+        "date": ["exception_date"]
     },
     "height": {
         "level_name": ["name"],
@@ -117,7 +117,7 @@ column_datatype_map: dict[str,dict[str,DatatypeEnum]] = {
         "language": DatatypeEnum.TEXT
     },
     "exception_table": {
-        "date_col": DatatypeEnum.DATE
+        "exception_date": DatatypeEnum.DATE
     },
     "height": {
         "name": DatatypeEnum.TEXT,
@@ -196,7 +196,7 @@ column_datatype_map: dict[str,dict[str,DatatypeEnum]] = {
 
 unique_column_map: dict[list[str]] = {
     "agency": ["name"],
-    "exception_table": ["date_col"],
+    "exception_table": ["exception_date"],
     "height": ["name", "above_sea_level", "floor"],
     "location_type": ["type"],
     "path": ["start_point", "end_point", "walk_type", "ride"],

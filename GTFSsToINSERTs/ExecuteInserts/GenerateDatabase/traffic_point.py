@@ -54,10 +54,10 @@ def generate_traffic_point_database_table(stops_gtfs_table, traffic_centre_datab
 
     # Ersetze den Typ aus dem GTFS-File durch die neu generierte ID des 'location_type'
     location_type_id_map = location_type_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
-        if type[0] == "":
+    for record_id, location_type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
+        if location_type[0] == "":
             continue
-        location_type_new_id = location_type_id_map[str(type[0])][0]
+        location_type_new_id = location_type_id_map[str(location_type[0])][0]
         traffic_centre_database_table.set_value(record_id, "location_type", location_type_new_id)
 
     return traffic_point_database_table

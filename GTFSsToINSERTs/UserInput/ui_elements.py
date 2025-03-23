@@ -70,7 +70,6 @@ class LabelFrame:
 #         return entry
 
 from PIL import Image, ImageTk
-from UserInput.images.resource_path import resource_path
 
 class TextRedirector(object):
     def __init__(self, widget, tag="stdout", auto_scroll_var=None):
