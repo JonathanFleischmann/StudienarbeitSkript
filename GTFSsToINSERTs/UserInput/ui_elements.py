@@ -36,38 +36,6 @@ class LabelFrame:
         label_frame = self.ttk.LabelFrame(self.parent, text=self.text, padding=self.padding)
         label_frame.grid(row=self.row, column=self.column, columnspan=self.columnspan, padx=self.padx, pady=self.pady, sticky=self.sticky)
         return label_frame
-    
-
-# class LabelEntry:
-#     def __init__(self, parent, text, row, tk, ttk):
-#         self.tk = tk
-#         self.ttk = ttk
-#         self.parent = parent
-#         self.text = text
-#         self.row = row
-#         self.column_label = 0
-#         self.column_entry = 1
-#         self.padx = 10
-#         self.pady = 5
-#         self.sticky_label = tk.W
-#         self.sticky_entry = tk.EW
-#         self.validate = "key"
-#         self.validate_command = None
-#         self.show = True
-
-#     def set_show(self, show):
-#         self.show = show
-#         return self
-    
-#     def set_validate_command(self, validate_command):
-#         self.validate_command = validate_command
-#         return self
-    
-#     def build(self):
-#         self.ttk.Label(self.parent, text=self.text).grid(row=self.row, column=self.column_label, padx=self.padx, pady=self.pady, sticky=self.sticky_label)
-#         entry = self.ttk.Entry(self.parent, show=self.show, validate=self.validate, validatecommand=self.validate_command)
-#         entry.grid(row=self.row, column=self.column_entry, padx=self.padx, pady=self.pady, sticky=self.sticky_entry)
-#         return entry
 
 from PIL import Image, ImageTk
 
