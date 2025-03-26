@@ -3,44 +3,73 @@ import threading
 from tkinter import filedialog
 from tkinter import ttk
 import sys
+from enum import Enum
 from UserInput.import_config import get_config
 from UserInput.create_config import create_config
 from UserInput.ui_elements import LabelFrame, TextRedirector, Style, set_entry_value
 from UserInput.validation import validate_entries, validate_int_input
 from UserInput.thread_control import stop_thread
 
-def on_submit(callback, stop_thread_var):
-    global running_thread
+
+class ModeEnum(Enum):
+    CREATE_TABLES = 1
+    INSERT_GTFS = 2
+    RELATIONAL_TO_GRAPH = 3
+    PERFORMANCE_ANALYSIS = 4
+
+
+
+def on_submit(stop_thread_var):
+    global running_thread, mode
     if running_thread and running_thread.is_alive():
-        print("Operation läuft bereits...")
+        print("Es ist bereits eine Operation aktiv...")
         return
+    if mode == ModeEnum.CREATE_TABLES:
+        thread = threading.Thread(target=lambda: submit_create_tables(stop_thread_var), daemon=True)
+        thread.start()
+        running_thread = thread
+    elif mode == ModeEnum.INSERT_GTFS:
+        thread = threading.Thread(target=lambda: submit_insert_gtfs(stop_thread_var), daemon=True)
+        thread.start()
+        running_thread = thread
+
+def submit_create_tables(stop_thread_var):
+    global running_thread, connect_method
+    return
+
+def submit_insert_gtfs(stop_thread_var):
+    global connect_method, gtfs_insert_method
     if validate_entries( 
         [   (db_host, "Host"),
             (db_port, "Port"),
             (db_service_name, "Service-Name"),
             (db_username, "Username"),
             (db_password, "Password"),
-            (gtfs_path, "GTFS-Pfad"),   ],
-        batch_size
+            (gtfs_path, "GTFS-Pfad"),
+            (batch_size, "Batch-Size")   ]
     ):
         # Leere die Konsolenausgabe
         console_text.configure(state="normal")
         console_text.delete(1.0, tk.END)
         console_text.configure(state="disabled")
 
-        # Starte die Callback-Methode in einem eigenen Thread
-        thread = threading.Thread(target=lambda: callback(
-            db_host.get(), 
-            db_port.get(), 
-            db_service_name.get(), 
-            db_username.get(), 
-            db_password.get(), 
+        # Starte die Connect-Methode in einem eigenen Thread
+        oracle_db_connection = connect_method(
+            db_host.get(),
+            db_port.get(),
+            db_service_name.get(),
+            db_username.get(),
+            db_password.get(),
+        )
+
+        if stop_thread_var.get(): return
+
+        gtfs_insert_method(
+            oracle_db_connection, 
             gtfs_path.get(), 
             int(batch_size.get()),
             stop_thread_var
-        ), daemon=True)
-        thread.start()
-        running_thread = thread
+        )
 
 def on_cancel(root, stop_thread_var):
     stop_thread(root, stop_thread_var, running_thread)
@@ -69,9 +98,18 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     entry.grid(row=row, column=1, padx=10, pady=5, sticky=tk.EW)
     return entry
 
-def start_user_interface(callback):
+def start_user_interface(get_db_connection, gtfs_to_inserts):
     global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread, console_text
+    global mode, connect_method, gtfs_insert_method
+
+    connect_method = get_db_connection
+    gtfs_insert_method = gtfs_to_inserts
+    
+    global db_config_frame, gtfs_path_frame, batch_size_frame
+    
     running_thread = None
+
+    mode = ModeEnum.INSERT_GTFS
 
     root = tk.Tk()
 
@@ -86,10 +124,26 @@ def start_user_interface(callback):
     vcmd = (root.register(validate_int_input), '%P')
 
     # Gesamtframe für Eingaben
-    input_frame = LabelFrame(root, "Eingabe", tk, ttk).set_columnspan(1).set_padding((4, 1)).build()
+    input_frame = LabelFrame(root, "Eingabe", tk, ttk).set_padding((4, 1)).set_columnspan(1).set_sticky(tk.NSEW).build()
+
+    # Konfiguriere die Zeilen im input_frame
+    input_frame.rowconfigure(0, weight=0)  # actions_frame (fixe Höhe)
+    input_frame.rowconfigure(1, weight=1)  # Restliche Elemente (flexibel)
+
+    # Frame für die Auswahl der Aktionen
+    actions_frame = LabelFrame(input_frame, "Aktionen", tk, ttk).set_row(0).set_padding((5, 5)).build()
+
+    # Buttons für die Aktionen
+    button_width = 24  # Feste Breite für alle Buttons
+    ttk.Button(actions_frame, text="CREATE TABLES", style="Orange.TButton", width=button_width, command=lambda: set_create_tables_mode()).grid(row=0, column=0, padx=5, pady=2)
+    ttk.Button(actions_frame, text="INSERT GTFS", style="Orange.TButton", width=button_width, command=lambda: set_insert_gtfs_mode()).grid(row=0, column=1, padx=5, pady=2)
+    ttk.Button(actions_frame, text="RELATIONAL TO GRAPH", style="Orange.TButton", width=button_width, command=lambda: set_relational_to_graph_mode()).grid(row=1, column=0, padx=5, pady=4)
+    ttk.Button(actions_frame, text="PERFORMANCE ANALYSIS", style="Orange.TButton", width=button_width, command=lambda: set_performance_analysis_mode()).grid(row=1, column=1, padx=5, pady=4)
+
+    action_data_frame = LabelFrame(input_frame, "Aktions-Daten", tk, ttk).set_row(1).build()
 
     # Labels und Eingabefelder für Datenbankkonfiguration
-    db_config_frame = LabelFrame(input_frame, "OracleDB Konfiguration", tk, ttk).build()
+    db_config_frame = LabelFrame(action_data_frame, "OracleDB Konfiguration", tk, ttk).set_row(0).build()
     db_host = create_label_entry(db_config_frame, "Host:", 0)
     db_port = create_label_entry(db_config_frame, "Port:", 1, validate_command=vcmd)
     db_service_name = create_label_entry(db_config_frame, "Service-name:", 2)
@@ -97,22 +151,22 @@ def start_user_interface(callback):
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
 
     # Elemente für Auswahl des GTFS-Ordners
-    gtfs_path_frame = LabelFrame(input_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
+    gtfs_path_frame = LabelFrame(action_data_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
     gtfs_path = ttk.Entry(gtfs_path_frame)
     gtfs_path.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
     ttk.Button(gtfs_path_frame, text="Ordner auswählen", command=select_gtfs_path).grid(row=0, column=1, padx=10, pady=10)
 
     # Eingabe für Batch-Größe
-    batch_size_frame = LabelFrame(input_frame, "Batch-Größe", tk, ttk).set_row(2).build()
+    batch_size_frame = LabelFrame(action_data_frame, "Batch-Größe", tk, ttk).set_row(2).build()
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Buttons für Verwaltung der Konfigurationsdatei
-    ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config).grid(row=3, column=0, padx=10, pady=10)
-    ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields).grid(row=3, column=1, padx=10, pady=10)
+    ttk.Button(input_frame, text="Konfigurationsdatei erstellen", command=create_config).grid(row=2, column=0, padx=10, pady=10)
+    ttk.Button(input_frame, text="Konfigurationsdatei laden", command=load_config_to_fields).grid(row=2, column=1, padx=10, pady=10)
 
     # Buttons für Starten des Imports und Abbrechen des Imports
-    ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_thread(root, stop_thread_var, running_thread), style="Red.TButton").grid(row=4, column=0, padx=10, pady=10)
-    ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(callback, stop_thread_var), style="Green.TButton").grid(row=4, column=1, padx=10, pady=10)
+    ttk.Button(input_frame, text="Abbrechen", command=lambda: stop_thread(root, stop_thread_var, running_thread), style="Red.TButton").grid(row=3, column=0, padx=10, pady=10)
+    ttk.Button(input_frame, text="Bestätigen", command=lambda: on_submit(stop_thread_var), style="Green.TButton").grid(row=3, column=1, padx=10, pady=10)
 
     # Frame für Konsolenausgaben
     console_frame = LabelFrame(root, "Konsolenausgaben", tk, ttk).set_padding((4, 10)).set_sticky(tk.NSEW).set_column(2).build()
@@ -141,4 +195,37 @@ def start_user_interface(callback):
     # Hauptschleife starten
     root.mainloop()
 
+
+def set_create_tables_mode():
+    global mode
+    mode = ModeEnum.CREATE_TABLES
+    update_visibility()
+
+def set_insert_gtfs_mode():
+    global mode
+    mode = ModeEnum.INSERT_GTFS
+    update_visibility()
+
+def set_relational_to_graph_mode():
+    global mode
+    mode = ModeEnum.RELATIONAL_TO_GRAPH
+    update_visibility()
+
+def set_performance_analysis_mode():
+    global mode
+    mode = ModeEnum.PERFORMANCE_ANALYSIS
+    update_visibility()
+
+
+def toggle_visibility(widget, visible_when: list[ModeEnum]):
+    global mode
+    if mode in visible_when:
+        widget.grid()  # Zeigt das Element wieder an
+    else:
+        widget.grid_forget()  # Blendet das Element aus
+
+def update_visibility():
+    toggle_visibility(db_config_frame, [ModeEnum.CREATE_TABLES, ModeEnum.INSERT_GTFS])
+    toggle_visibility(gtfs_path_frame, [ModeEnum.INSERT_GTFS])
+    toggle_visibility(batch_size_frame, [ModeEnum.INSERT_GTFS])
 

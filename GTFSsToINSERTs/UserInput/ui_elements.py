@@ -106,6 +106,14 @@ def Style(ttk):
                     font=("Arial", 8, "bold"))
     style.map("TButton",
             background=[("active", "#3931b5")])
+    
+    # Erstelle einen orangenen Button-Stil
+    style.configure("Orange.TButton",
+                    background="#cc7212",
+                    foreground="black",
+                    font=("Arial", 8, "bold"))
+    style.map("Orange.TButton",
+            background=[("active", "#ed800c")])
 
     # Erstelle einen roten Button-Stil
     style.configure("Red.TButton",
