@@ -11,6 +11,7 @@ class LabelFrame:
         self.column = 0
         self.columnspan = 2
         self.sticky = tk.EW
+        self.width = None
 
     def set_padding(self, padding:(int, int)): # type: ignore
         self.padding = padding
@@ -31,9 +32,16 @@ class LabelFrame:
     def set_column(self, column:int):
         self.column = column
         return self
+    
+    def set_width(self, width:int):
+        self.width = width
+        return self
 
     def build(self):
-        label_frame = self.ttk.LabelFrame(self.parent, text=self.text, padding=self.padding)
+        if self.width:
+            label_frame = self.ttk.LabelFrame(self.parent, text=self.text, padding=self.padding, width=self.width)
+        else:
+            label_frame = self.ttk.LabelFrame(self.parent, text=self.text, padding=self.padding)
         label_frame.grid(row=self.row, column=self.column, columnspan=self.columnspan, padx=self.padx, pady=self.pady, sticky=self.sticky)
         return label_frame
 

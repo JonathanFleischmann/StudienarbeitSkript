@@ -2,6 +2,7 @@ from database_connection import get_orcle_db_connection
 from CreateTables.create_all_tables import create_all_tables
 from GTFSReadIn.gtfs_read_in import get_table_map_from_GTFSs
 from ExecuteInserts.execute_inserts import execute_inserts
+from ExecuteStatements.oracle_execute_statement import oracle_execute_statement
 from UserInput.user_interface import start_user_interface
 import cx_Oracle
 
@@ -52,6 +53,20 @@ def gtfs_to_inserts(
     if stop_thread_var.get(): return
 
 
+def execute_statement_on_oracle_db(
+    oracle_db_connection: cx_Oracle.Connection,
+    statement: str
+):
+    return oracle_execute_statement(oracle_db_connection, statement)
+
+
+
+
 if __name__ == "__main__":
 
-    start_user_interface(connect_to_oracle_db, create_tables_and_triggers, gtfs_to_inserts)
+    start_user_interface(
+        connect_to_oracle_db, 
+        create_tables_and_triggers, 
+        gtfs_to_inserts, 
+        execute_statement_on_oracle_db
+    )

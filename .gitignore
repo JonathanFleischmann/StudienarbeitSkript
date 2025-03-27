@@ -11,6 +11,8 @@ GTFSsToINSERTs/UserInput/__pycache__
 
 GTFSsToINSERTs/CreateTables/__pycache__
 
+GTFSsToINSERTs/ExecuteStatements/__pycache__
+
 main.spec
 
 dist/main
