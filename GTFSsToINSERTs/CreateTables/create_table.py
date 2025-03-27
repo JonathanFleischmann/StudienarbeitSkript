@@ -1,6 +1,6 @@
 import cx_Oracle
 
-def create_table(oracle_db_connection: cx_Oracle.Connection, table_name: str, create_table_statement: str):
+def create_table(oracle_db_connection: cx_Oracle.Connection, table_name: str, create_table_statement: str)-> bool:
     '''
     führt das gegebene CREATE TABLE Statement auf die Datenbank aus, wenn die Tabelle noch nicht existiert
     am Ende wird ausgegeben, ob die Tabelle erfolgreich erstellt wurde oder es einen Fehler gab
@@ -19,11 +19,14 @@ def create_table(oracle_db_connection: cx_Oracle.Connection, table_name: str, cr
             # Tabelle erstellen
             cursor.execute(create_table_statement)
             print(f"✅ Die Tabelle **{table_name}** wurde erfolgreich erstellt.")
-            
-        oracle_db_connection.commit()
+            oracle_db_connection.commit()
+            return True
+        else:
+            return False
     except cx_Oracle.DatabaseError as e:
-        print(f"Es ist ein Fehler beim Erstellen der Tabelle **{table_name}** aufgetreten: {e}")
+        print(f"❌ Es ist ein Fehler beim Erstellen der Tabelle **{table_name}** aufgetreten: {e}")
         oracle_db_connection.rollback()
+        return False
     finally:
         cursor.close()
 
@@ -47,7 +50,7 @@ def delete_table(oracle_db_connection: cx_Oracle.Connection, table_name: str):
 
         oracle_db_connection.commit()
     except cx_Oracle.DatabaseError as e:
-        print(f"Es ist ein Fehler beim Erstellen der Tabelle **{table_name}** aufgetreten: {e}")
+        print(f"❌ Es ist ein Fehler beim Erstellen der Tabelle **{table_name}** aufgetreten: {e}")
         oracle_db_connection.rollback()
     finally:
         cursor.close()

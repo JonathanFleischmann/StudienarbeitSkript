@@ -25,12 +25,13 @@ def connect_to_oracle_db(
 
 def create_tables_and_triggers(
         oracle_db_connection: cx_Oracle.Connection,
+        delete_existing_tables: bool,
         stop_thread_var
         ):
     
     if stop_thread_var.get(): return
 
-    create_all_tables(oracle_db_connection, stop_thread_var)
+    create_all_tables(oracle_db_connection, delete_existing_tables, stop_thread_var)
 
 
 def gtfs_to_inserts(

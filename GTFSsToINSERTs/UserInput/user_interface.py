@@ -63,6 +63,7 @@ def submit_create_tables(stop_thread_var):
         # Starte das Erstellen der Tabellen
         create_tables_method(
             oracle_db_connection, 
+            delete_tables_var.get(),
             stop_thread_var
         )
 
@@ -129,7 +130,7 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     return entry
 
 def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_inserts):
-    global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread, console_text
+    global db_host, db_port, db_service_name, db_username, db_password, delete_tables_var, batch_size, gtfs_path, running_thread, console_text
     global mode, connect_method, create_tables_method, gtfs_insert_method
 
     connect_method = get_db_connection
@@ -180,6 +181,10 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     db_service_name = create_label_entry(db_config_frame, "Service-name:", 2)
     db_username = create_label_entry(db_config_frame, "Username:", 3)
     db_password = create_label_entry(db_config_frame, "Password:", 4, show="*")
+
+    # Checkbox für das Löschen bereits existierender Tabellen bei CreateTables
+    delete_tables_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(action_data_frame, text="⚠️ Bereits existierende Tabellen mit Inhalt löschen", variable=delete_tables_var).grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
 
     # Elemente für Auswahl des GTFS-Ordners
     gtfs_path_frame = LabelFrame(action_data_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
