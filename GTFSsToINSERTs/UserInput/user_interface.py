@@ -224,7 +224,7 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     ttk.Button(db_select_frame, text="OracleDB", style="TButton", width=button_width, command=lambda: set_oracle_db()).grid(row=0, column=0, padx=5, pady=2)
     ttk.Button(db_select_frame, text="Neo4j", style="TButton", width=button_width, command=lambda: set_neo4j()).grid(row=0, column=1, padx=5, pady=2)
 
-    action_data_frame = LabelFrame(input_frame, "Aktions-Daten", tk, ttk).set_padding((1,1)).set_row(2).build()
+    action_data_frame = LabelFrame(input_frame, "Aktions-Daten", tk, ttk).set_padding((0,4)).set_row(2).build()
 
     # Labels und Eingabefelder für Datenbankkonfiguration
     db_config_frame = LabelFrame(action_data_frame, "OracleDB Konfiguration", tk, ttk).set_width(200).set_row(0).build()
@@ -250,8 +250,8 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Eingabe für Statement für Performance-Analyse
-    performance_statement_frame = LabelFrame(action_data_frame, "SQL-Statement für Performance-Analyse auf OracleDB", tk, ttk).set_row(1).set_padding((3,3)).build()
-    performance_statement_text = tk.Text(performance_statement_frame, height=6, width=32, wrap="word")
+    performance_statement_frame = LabelFrame(action_data_frame, "SQL-Statement für Performance-Analyse auf OracleDB", tk, ttk).set_row(1).set_padding((0,3)).build()
+    performance_statement_text = tk.Text(performance_statement_frame, height=6, width=34, wrap="word")
     performance_statement_text.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
     performance_statement_scrollbar = ttk.Scrollbar(performance_statement_frame, command=performance_statement_text.yview)
     performance_statement_scrollbar.grid(row=0, column=1, sticky=tk.NS)
