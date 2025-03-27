@@ -11,7 +11,14 @@ def oracle_execute_statement(oracle_db_connection: cx_Oracle.Connection, stateme
     try:
         cursor.execute(statement)
 
-        result = cursor.fetchall()
+        # Wenn es sich um ein SELECT-Statement handelt, wird das Ergebnis zurückgegeben
+        if statement.strip().upper().startswith("SELECT"):
+            result = cursor.fetchall()
+        elif statement.strip().upper().startswith("INSERT"):
+            result = cursor.rowcount
+        else:
+            result = "✅ Statement erfolgreich ausgeführt"
+        oracle_db_connection.commit()
         return result
     except cx_Oracle.DatabaseError as e:
         oracle_db_connection.rollback()
