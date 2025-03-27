@@ -1,0 +1,227 @@
+create_table_statements: dict[str,str] = {
+    "agency": 
+        '''
+        CREATE TABLE agency (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name VARCHAR2(100) UNIQUE NOT NULL,
+            url VARCHAR2(100),
+            language VARCHAR2(50)
+        );
+        ''',
+    "route": 
+        '''
+        CREATE TABLE route (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name VARCHAR2(100) NOT NULL,
+            short_name VARCHAR2(10) NOT NULL,
+            type VARCHAR2(50),
+            description VARCHAR2(400),
+            agency NUMBER NOT NULL,
+            CONSTRAINT unique_name_in_agency UNIQUE (name, agency),
+            CONSTRAINT fk_agency FOREIGN KEY (agency) REFERENCES agency(id) ON DELETE CASCADE
+        );'
+        ''',
+    "weekdays": 
+        '''
+        CREATE TABLE weekdays (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            monday NUMBER(1) NOT NULL CHECK (monday IN (0, 1)),
+            tuesday NUMBER(1) NOT NULL CHECK (tuesday IN (0, 1)),
+            wednesday NUMBER(1) NOT NULL CHECK (wednesday IN (0, 1)),
+            thursday NUMBER(1) NOT NULL CHECK (thursday IN (0, 1)),
+            friday NUMBER(1) NOT NULL CHECK (friday IN (0, 1)),
+            saturday NUMBER(1) NOT NULL CHECK (satuarday IN (0, 1)),
+            sunday NUMBER(1) NOT NULL CHECK (sunday IN (0, 1)),
+            CONSTRAINT unique_weekdays UNIQUE (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
+        );'
+        ''',
+    "period":
+        '''
+        CREATE TABLE period (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            weekdays NUMBER NOT NULL,
+            CONSTRAINT unique_period UNIQUE (start_date, end_date, weekdays),
+            CONSTRAINT fk_weekdays FOREIGN KEY (weekdays) REFERENCES weekdays(id) ON DELETE CASCADE,
+            CONSTRAINT check_dates CHECK (start_date <= end_date)
+        );'
+        ''',
+    "ride":
+        '''
+        CREATE TABLE ride (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            route NUMBER NOT NULL,
+            period NUMBER NOT NULL,
+            headsign VARCHAR2(200),
+            start_time TIMESTAMP NOT NULL,
+            CONSTRAINT unique_ride UNIQUE (route, period, start_time),
+            CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
+            CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
+        );'
+        ''',
+    "exception_table":
+        '''
+        CREATE TABLE exception_table (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            exception_date DATE UNIQUE NOT NULL
+        );
+        ''',
+    "ride_exception":
+        '''
+        CREATE TABLE ride_exception (
+            ride NUMBER NOT NULL,
+            exception_table NUMBER NOT NULL,                                
+            CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
+            CONSTRAINT fk_ride FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
+            CONSTRAINT fk_exception FOREIGN KEY (exception_table) REFERENCES exception_table(id) ON DELETE CASCADE
+        );
+        ''',
+    "location_type":
+        '''
+        CREATE TABLE location_type (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            type VARCHAR2(50) UNIQUE NOT NULL
+        );
+        ''',
+    "height":
+        '''
+        CREATE TABLE height (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name VARCHAR2(100),
+            above_sea_level NUMBER NOT NULL,
+            floor NUMBER,
+            CONSTRAINT unique_name_sea_level_and_floor UNIQUE (name, above_sea_level, floor)
+        );
+        ''',
+    "traffic_centre":
+        '''
+        CREATE TABLE traffic_centre (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name VARCHAR2(100),
+            location_type NUMBER NOT NULL,
+            latitude NUMBER(20, 15),
+            longitude NUMBER(20, 15),
+            CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
+            CONSTRAINT fk_traffic_centre_type FOREIGN KEY (location_type) REFERENCES location_type(id)
+        );
+        ''',
+    "traffic_point":
+        '''
+        CREATE TABLE traffic_point (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            name VARCHAR2(100),
+            location_type NUMBER,
+            latitude NUMBER(20, 15),
+            longitude NUMBER(20, 15),
+            height NUMBER,
+            traffic_centre NUMBER,
+            CONSTRAINT unique_latitude_and_longitude UNIQUE (latitude, longitude),
+            CONSTRAINT fk_location_type FOREIGN KEY (location_type) REFERENCES location_type(id),
+            CONSTRAINT fk_height FOREIGN KEY (height) REFERENCES height(id),
+            CONSTRAINT fk_traffic_centre FOREIGN KEY (traffic_centre) REFERENCES traffic_centre(id) ON DELETE CASCADE
+        );'
+        ''',
+    "walk_type":
+        '''
+        CREATE TABLE walk_type (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            type VARCHAR2(50) UNIQUE NOT NULL
+        );'
+        ''',
+    "stop_type":
+        '''
+        CREATE TABLE stop_type (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            type VARCHAR2(50) UNIQUE NOT NULL
+        );
+        ''',
+    "path":
+        '''
+        CREATE TABLE path (
+            id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            min_travel_time NUMBER,
+            is_ride NUMBER(1) NOT NULL CHECK (is_ride IN (0, 1)),
+            destination VARCHAR2(200),
+            walk_type NUMBER,
+            ride NUMBER,
+            start_point INTEGER NOT NULL,
+            departure_time TIMESTAMP,
+            enter_type INTEGER,
+            end_point INTEGER NOT NULL,
+            arrival_time TIMESTAMP,
+            descend_type INTEGER,
+            sequence INTEGER,
+            CONSTRAINT unique_path UNIQUE (start_point, end_point, walk_type, ride),
+            CONSTRAINT fk_walk_type FOREIGN KEY (walk_type) REFERENCES walk_type(id),
+            CONSTRAINT fk_ride_in_path FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
+            CONSTRAINT fk_start_point FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
+            CONSTRAINT fk_enter_type FOREIGN KEY (enter_type) REFERENCES stop_type(id) ON DELETE CASCADE,
+            CONSTRAINT fk_end_point FOREIGN KEY (end_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
+            CONSTRAINT fk_descend_type FOREIGN KEY (descend_type) REFERENCES stop_type(id) ON DELETE CASCADE,
+            CONSTRAINT check_path_conditions CHECK (
+                (is_ride = 0 AND walk_type IS NOT NULL AND ride IS NULL AND destination IS NULL) OR
+                (is_ride = 1 AND walk_type IS NULL AND ride IS NOT NULL)
+                )
+        );
+        '''
+}
+
+create_or_replace_trigger_statements: dict[str,str] = {
+    "period_ensure_date_with_default_time":
+        '''
+        CREATE OR REPLACE TRIGGER period_ensure_date_with_default_time
+            BEFORE INSERT OR UPDATE ON period
+            FOR EACH ROW
+        BEGIN
+            :NEW.start_date := TRUNC(:NEW.start_date);
+            :NEW.end_date := TRUNC(:NEW.end_date);
+        END;
+        ''',
+    "exception_table_ensure_date_with_default_time":
+        '''
+        CREATE OR REPLACE TRIGGER exception_table_ensure_date_with_default_time
+            BEFORE INSERT OR UPDATE ON exception_table
+            FOR EACH ROW
+        BEGIN
+            :NEW.exception_date := TRUNC(:NEW.exception_date);
+        END;
+        ''',
+    "path_ensure_time_with_default_date":
+        '''
+        CREATE OR REPLACE TRIGGER path_ensure_time_with_default_date
+            BEFORE INSERT OR UPDATE ON path
+            FOR EACH ROW
+        BEGIN
+            :NEW.departure_time := TO_TIMESTAMP_TZ('1970-01-01 ' || TO_CHAR(:NEW.departure_time, 'HH24:MI') || ':00 ' || TO_CHAR(:NEW.departure_time, 'TZD'), 'YYYY-MM-DD HH24:MI:SS TZD');
+            :NEW.arrival_time := TO_TIMESTAMP_TZ('1970-01-01 ' || TO_CHAR(:NEW.arrival_time, 'HH24:MI') || ':00 ' || TO_CHAR(:NEW.arrival_time, 'TZD'), 'YYYY-MM-DD HH24:MI:SS TZD');
+        END;
+        CREATE OR REPLACE TRIGGER path_calculate_min_travel_time_if_possible
+            BEFORE INSERT OR UPDATE ON path
+            FOR EACH ROW
+        BEGIN
+            IF :NEW.min_travel_time IS NULL AND :NEW.departure_time IS NOT NULL AND :NEW.arrival_time IS NOT NULL THEN
+                DECLARE
+                    v_departure_minutes NUMBER;
+                    v_arrival_minutes NUMBER;
+                BEGIN
+                    v_departure_minutes := EXTRACT(HOUR FROM :NEW.departure_time) * 60 + EXTRACT(MINUTE FROM :NEW.departure_time);
+                    v_arrival_minutes := EXTRACT(HOUR FROM :NEW.arrival_time) * 60 + EXTRACT(MINUTE FROM :NEW.arrival_time);
+                    IF v_arrival_minutes < v_departure_minutes THEN
+                        :NEW.min_travel_time := (1440 - v_departure_minutes) + v_arrival_minutes;
+                    ELSE
+                        :NEW.min_travel_time := v_arrival_minutes - v_departure_minutes;
+                    END IF;
+                END;
+            END IF;
+        END;
+        '''
+}
+
+
+
+
+
+
+
+

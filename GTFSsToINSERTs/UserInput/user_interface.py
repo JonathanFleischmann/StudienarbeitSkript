@@ -25,17 +25,46 @@ def on_submit(stop_thread_var):
         print("Es ist bereits eine Operation aktiv...")
         return
     if mode == ModeEnum.CREATE_TABLES:
+        # Starte den Thread für das Erstellen der Tabellen
         thread = threading.Thread(target=lambda: submit_create_tables(stop_thread_var), daemon=True)
         thread.start()
         running_thread = thread
     elif mode == ModeEnum.INSERT_GTFS:
+        # Starte den Thread für das Einfügen der GTFS-Daten
         thread = threading.Thread(target=lambda: submit_insert_gtfs(stop_thread_var), daemon=True)
         thread.start()
         running_thread = thread
 
 def submit_create_tables(stop_thread_var):
-    global running_thread, connect_method
-    return
+    global running_thread, connect_method, create_tables_method
+    if validate_entries(
+        [   (db_host, "Host"),
+            (db_port, "Port"),
+            (db_service_name, "Service-Name"),
+            (db_username, "Username"),
+            (db_password, "Password")   ]
+    ):
+        # Leere die Konsolenausgabe
+        console_text.configure(state="normal")
+        console_text.delete(1.0, tk.END)
+        console_text.configure(state="disabled")
+
+        # Starte die Verbindung zur Datenbank
+        oracle_db_connection = connect_method(
+            db_host.get(),
+            db_port.get(),
+            db_service_name.get(),
+            db_username.get(),
+            db_password.get(),
+        )
+
+        if stop_thread_var.get(): return
+
+        # Starte das Erstellen der Tabellen
+        create_tables_method(
+            oracle_db_connection, 
+            stop_thread_var
+        )
 
 def submit_insert_gtfs(stop_thread_var):
     global connect_method, gtfs_insert_method
@@ -53,7 +82,7 @@ def submit_insert_gtfs(stop_thread_var):
         console_text.delete(1.0, tk.END)
         console_text.configure(state="disabled")
 
-        # Starte die Connect-Methode in einem eigenen Thread
+        # Starte die Verbindung zur Datenbank
         oracle_db_connection = connect_method(
             db_host.get(),
             db_port.get(),
@@ -64,6 +93,7 @@ def submit_insert_gtfs(stop_thread_var):
 
         if stop_thread_var.get(): return
 
+        # Starte den Import der GTFS-Daten
         gtfs_insert_method(
             oracle_db_connection, 
             gtfs_path.get(), 
@@ -98,11 +128,12 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
     entry.grid(row=row, column=1, padx=10, pady=5, sticky=tk.EW)
     return entry
 
-def start_user_interface(get_db_connection, gtfs_to_inserts):
+def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_inserts):
     global db_host, db_port, db_service_name, db_username, db_password, batch_size, gtfs_path, running_thread, console_text
-    global mode, connect_method, gtfs_insert_method
+    global mode, connect_method, create_tables_method, gtfs_insert_method
 
     connect_method = get_db_connection
+    create_tables_method = create_tables_and_triggers
     gtfs_insert_method = gtfs_to_inserts
     
     global db_config_frame, gtfs_path_frame, batch_size_frame

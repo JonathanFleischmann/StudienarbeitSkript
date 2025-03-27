@@ -9,6 +9,8 @@ GTFSsToINSERTs/GTFSReadIn/__pycache__
 
 GTFSsToINSERTs/UserInput/__pycache__
 
+GTFSsToINSERTs/CreateTables/__pycache__
+
 main.spec
 
 dist/main

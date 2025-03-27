@@ -1,8 +1,37 @@
+from database_connection import get_orcle_db_connection
+from CreateTables.create_all_tables import create_all_tables
 from GTFSReadIn.gtfs_read_in import get_table_map_from_GTFSs
 from ExecuteInserts.execute_inserts import execute_inserts
-from database_connection import get_orcle_db_connection
 from UserInput.user_interface import start_user_interface
 import cx_Oracle
+
+
+def connect_to_oracle_db(
+    host: str, 
+    port: int, 
+    service_name: str, 
+    username: str, 
+    password: str, 
+)-> cx_Oracle.Connection:
+
+    return get_orcle_db_connection(
+        host, 
+        port, 
+        service_name, 
+        username, 
+        password
+    )
+
+
+def create_tables_and_triggers(
+        oracle_db_connection: cx_Oracle.Connection,
+        stop_thread_var
+        ):
+    
+    if stop_thread_var.get(): return
+
+    create_all_tables(oracle_db_connection, stop_thread_var)
+
 
 def gtfs_to_inserts(
     oracle_db_connection: cx_Oracle.Connection,
@@ -22,23 +51,6 @@ def gtfs_to_inserts(
     if stop_thread_var.get(): return
 
 
-def connect_to_oracle_db(
-    host: str, 
-    port: int, 
-    service_name: str, 
-    username: str, 
-    password: str, 
-)-> cx_Oracle.Connection:
-
-    return get_orcle_db_connection(
-        host, 
-        port, 
-        service_name, 
-        username, 
-        password
-    )
-        
-
 if __name__ == "__main__":
 
-    start_user_interface(connect_to_oracle_db, gtfs_to_inserts)
+    start_user_interface(connect_to_oracle_db, create_tables_and_triggers, gtfs_to_inserts)
