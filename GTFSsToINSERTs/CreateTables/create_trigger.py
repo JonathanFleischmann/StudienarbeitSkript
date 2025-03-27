@@ -11,10 +11,10 @@ def create_or_replace_trigger(oracle_db_connection: cx_Oracle.Connection, trigge
     cursor = oracle_db_connection.cursor()
     try:
         cursor.execute(create_or_replace_trigger_statement)
-        print("✅ Der Trigger ", trigger_name, "wurde erfolgreich erstellt.")
+        print(f"✅ Der Trigger **{trigger_name}** wurde erfolgreich erstellt.")
         oracle_db_connection.commit()
     except cx_Oracle.DatabaseError as e:
-        print(f"Es ist ein Fehler beim Erstellen des Triggers {trigger_name} aufgetreten: {e}")
+        print(f"Es ist ein Fehler beim Erstellen des Triggers **{trigger_name}** aufgetreten: {e}")
         oracle_db_connection.rollback()
     finally:
         cursor.close()
