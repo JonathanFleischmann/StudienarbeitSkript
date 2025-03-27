@@ -137,7 +137,7 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     create_tables_method = create_tables_and_triggers
     gtfs_insert_method = gtfs_to_inserts
     
-    global db_config_frame, gtfs_path_frame, batch_size_frame
+    global db_config_frame, delete_tables_checkbox, gtfs_path_frame, batch_size_frame
     
     running_thread = None
 
@@ -184,7 +184,8 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
 
     # Checkbox für das Löschen bereits existierender Tabellen bei CreateTables
     delete_tables_var = tk.BooleanVar(value=False)
-    ttk.Checkbutton(action_data_frame, text="⚠️ Bereits existierende Tabellen mit Inhalt löschen", variable=delete_tables_var).grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
+    delete_tables_checkbox = ttk.Checkbutton(action_data_frame, text="⚠️ Bereits existierende Tabellen mit Inhalt löschen", variable=delete_tables_var)
+    delete_tables_checkbox.grid(row=1, column=0, padx=10, pady=0, sticky=tk.W)
 
     # Elemente für Auswahl des GTFS-Ordners
     gtfs_path_frame = LabelFrame(action_data_frame, "Dateipfad zu GTFS-Dateien", tk, ttk).set_row(1).build()
@@ -264,4 +265,5 @@ def update_visibility():
     toggle_visibility(db_config_frame, [ModeEnum.CREATE_TABLES, ModeEnum.INSERT_GTFS])
     toggle_visibility(gtfs_path_frame, [ModeEnum.INSERT_GTFS])
     toggle_visibility(batch_size_frame, [ModeEnum.INSERT_GTFS])
+    toggle_visibility(delete_tables_checkbox, [ModeEnum.CREATE_TABLES])
 
