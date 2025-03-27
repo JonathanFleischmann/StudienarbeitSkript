@@ -1,7 +1,7 @@
 import cx_Oracle
 
-from CreateTables.create_table_and_trigger_statements import create_table_statements, create_or_replace_trigger_statements
-from CreateTables.create_table import create_or_replace_table
+from CreateTables.create_table_and_trigger_statements import delete_table_order, create_table_statements, create_or_replace_trigger_statements
+from CreateTables.create_table import create_table, delete_table
 from CreateTables.create_trigger import create_or_replace_trigger
 
 def create_all_tables(oracle_db_connection: cx_Oracle.Connection, stop_thread_var):
@@ -10,9 +10,13 @@ def create_all_tables(oracle_db_connection: cx_Oracle.Connection, stop_thread_va
     :param oracle_db_connection: Die Verbindung zur Oracle-Datenbank.
     '''
 
+    for table_name in delete_table_order:
+        if stop_thread_var.get(): return
+        delete_table(oracle_db_connection, table_name)
+
     for table_name, create_table_statement in create_table_statements.items():
         if stop_thread_var.get(): return
-        create_or_replace_table(oracle_db_connection, table_name, create_table_statement)
+        create_table(oracle_db_connection, table_name, create_table_statement)
 
     for trigger_name, create_or_replace_trigger_statement in create_or_replace_trigger_statements.items():
         if stop_thread_var.get(): return

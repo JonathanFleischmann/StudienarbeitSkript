@@ -59,7 +59,7 @@ CREATE TABLE weekdays (
                           wednesday NUMBER(1) NOT NULL CHECK (wednesday IN (0, 1)),
                           thursday NUMBER(1) NOT NULL CHECK (thursday IN (0, 1)),
                           friday NUMBER(1) NOT NULL CHECK (friday IN (0, 1)),
-                          saturday NUMBER(1) NOT NULL CHECK (satuarday IN (0, 1)),
+                          saturday NUMBER(1) NOT NULL CHECK (saturday IN (0, 1)),
                           sunday NUMBER(1) NOT NULL CHECK (sunday IN (0, 1)),
                        	  CONSTRAINT unique_weekdays UNIQUE (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
 );

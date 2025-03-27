@@ -6,7 +6,7 @@ create_table_statements: dict[str,str] = {
             name VARCHAR2(100) UNIQUE NOT NULL,
             url VARCHAR2(100),
             language VARCHAR2(50)
-        );
+        )
         ''',
     "route": 
         '''
@@ -19,7 +19,7 @@ create_table_statements: dict[str,str] = {
             agency NUMBER NOT NULL,
             CONSTRAINT unique_name_in_agency UNIQUE (name, agency),
             CONSTRAINT fk_agency FOREIGN KEY (agency) REFERENCES agency(id) ON DELETE CASCADE
-        );'
+        )
         ''',
     "weekdays": 
         '''
@@ -30,10 +30,10 @@ create_table_statements: dict[str,str] = {
             wednesday NUMBER(1) NOT NULL CHECK (wednesday IN (0, 1)),
             thursday NUMBER(1) NOT NULL CHECK (thursday IN (0, 1)),
             friday NUMBER(1) NOT NULL CHECK (friday IN (0, 1)),
-            saturday NUMBER(1) NOT NULL CHECK (satuarday IN (0, 1)),
+            saturday NUMBER(1) NOT NULL CHECK (saturday IN (0, 1)),
             sunday NUMBER(1) NOT NULL CHECK (sunday IN (0, 1)),
             CONSTRAINT unique_weekdays UNIQUE (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
-        );'
+        )
         ''',
     "period":
         '''
@@ -45,7 +45,7 @@ create_table_statements: dict[str,str] = {
             CONSTRAINT unique_period UNIQUE (start_date, end_date, weekdays),
             CONSTRAINT fk_weekdays FOREIGN KEY (weekdays) REFERENCES weekdays(id) ON DELETE CASCADE,
             CONSTRAINT check_dates CHECK (start_date <= end_date)
-        );'
+        )
         ''',
     "ride":
         '''
@@ -58,14 +58,14 @@ create_table_statements: dict[str,str] = {
             CONSTRAINT unique_ride UNIQUE (route, period, start_time),
             CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
             CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
-        );'
+        )
         ''',
     "exception_table":
         '''
         CREATE TABLE exception_table (
             id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             exception_date DATE UNIQUE NOT NULL
-        );
+        )
         ''',
     "ride_exception":
         '''
@@ -75,14 +75,14 @@ create_table_statements: dict[str,str] = {
             CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
             CONSTRAINT fk_ride FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
             CONSTRAINT fk_exception FOREIGN KEY (exception_table) REFERENCES exception_table(id) ON DELETE CASCADE
-        );
+        )
         ''',
     "location_type":
         '''
         CREATE TABLE location_type (
             id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             type VARCHAR2(50) UNIQUE NOT NULL
-        );
+        )
         ''',
     "height":
         '''
@@ -92,7 +92,7 @@ create_table_statements: dict[str,str] = {
             above_sea_level NUMBER NOT NULL,
             floor NUMBER,
             CONSTRAINT unique_name_sea_level_and_floor UNIQUE (name, above_sea_level, floor)
-        );
+        )
         ''',
     "traffic_centre":
         '''
@@ -104,7 +104,7 @@ create_table_statements: dict[str,str] = {
             longitude NUMBER(20, 15),
             CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
             CONSTRAINT fk_traffic_centre_type FOREIGN KEY (location_type) REFERENCES location_type(id)
-        );
+        )
         ''',
     "traffic_point":
         '''
@@ -120,21 +120,21 @@ create_table_statements: dict[str,str] = {
             CONSTRAINT fk_location_type FOREIGN KEY (location_type) REFERENCES location_type(id),
             CONSTRAINT fk_height FOREIGN KEY (height) REFERENCES height(id),
             CONSTRAINT fk_traffic_centre FOREIGN KEY (traffic_centre) REFERENCES traffic_centre(id) ON DELETE CASCADE
-        );'
+        )
         ''',
     "walk_type":
         '''
         CREATE TABLE walk_type (
             id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             type VARCHAR2(50) UNIQUE NOT NULL
-        );'
+        )
         ''',
     "stop_type":
         '''
         CREATE TABLE stop_type (
             id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
             type VARCHAR2(50) UNIQUE NOT NULL
-        );
+        )
         ''',
     "path":
         '''
@@ -163,9 +163,29 @@ create_table_statements: dict[str,str] = {
                 (is_ride = 0 AND walk_type IS NOT NULL AND ride IS NULL AND destination IS NULL) OR
                 (is_ride = 1 AND walk_type IS NULL AND ride IS NOT NULL)
                 )
-        );
+        )
         '''
 }
+
+
+delete_table_order: list[str] = [
+    "path",
+    "stop_type",
+    "walk_type",
+    "traffic_point",
+    "traffic_centre",
+    "height",
+    "location_type",
+    "ride_exception",
+    "exception_table",
+    "ride",
+    "period",
+    "weekdays",
+    "route",
+    "agency"
+]
+
+
 
 create_or_replace_trigger_statements: dict[str,str] = {
     "period_ensure_date_with_default_time":
