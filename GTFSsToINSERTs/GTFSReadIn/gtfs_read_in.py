@@ -13,14 +13,3 @@ def get_database_cache_from_GTFSs(cache_db, input_folder, stop_thread_var)-> Non
         if stop_thread_var.get(): return
         print("\r ✅ Datei **" + filename + "** wurde erfolgreich verarbeitet.")
 
-    # Erstelle Indexe auf die cache-DB
-    # CREATE INDEX IF NOT EXISTS idx_stops_parent_station ON stops(parent_station);
-    # CREATE INDEX IF NOT EXISTS idx_stops_stop_id ON stops(stop_id);
-    # CREATE INDEX IF NOT EXISTS idx_stop_times_stop_id ON stop_times(stop_id);
-
-    cache_db.execute("CREATE INDEX IF NOT EXISTS idx_stops_parent_station ON stops(parent_station);")
-    cache_db.execute("CREATE INDEX IF NOT EXISTS idx_stops_stop_id ON stops(stop_id);")
-    cache_db.execute("CREATE INDEX IF NOT EXISTS idx_stop_times_stop_id ON stop_times(stop_id);")
-
-    cache_db.commit()
-

@@ -61,7 +61,7 @@ def clear_traffic_point_cache_db_table(cache_db: sqlite3.Connection, batch_size:
         select_ids_sql = f"SELECT id, record_id FROM traffic_centre LIMIT {batch_size} OFFSET ?"
         # Erstelle dazu eine neue Spalte, um die IDs zu speichern und Referenzen auf parent_stations, die nicht als traffic_centre 
         # erkannt wurden, zu löschen
-        cache_db.execute(f"ALTER TABLE {new_table_name} RENAME COLUMN trafffic_centre TO parent_station;")
+        cache_db.execute(f"ALTER TABLE {new_table_name} RENAME COLUMN traffic_centre TO parent_station;")
         cache_db.commit()
         # Füge die neue Spalte 'traffic_centre' hinzu, um die IDs zu speichern
         cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN traffic_centre TEXT;")

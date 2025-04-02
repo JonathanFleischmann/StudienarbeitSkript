@@ -1,5 +1,7 @@
 import sqlite3
+import time
 from preset_values import column_names_map
+from ExecuteInserts.core import show_progress
 
 def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
     old_table_name = "trips"
@@ -27,12 +29,12 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         cache_db.execute(sql)
     cache_db.commit()
 
-
     # Ersetze die 'route_id' in der Spalte 'route' in der cache-DB durch die neu generierte ID der 'route'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM route LIMIT {batch_size} OFFSET ?"
     update_id_sql = f"UPDATE {new_table_name} SET route = :1 WHERE route = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM route").fetchone()[0]
+    start_time = time.time()
 
     for i in range(0, total_update_conditions, batch_size):
         if stop_thread_var.get(): return
@@ -46,11 +48,14 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         # committe die Änderungen
         cache_db.commit()
 
+        show_progress(i + batch_size, total_update_conditions, start_time, "Route-IDs aktualisieren")
+
     # Füge die neu generierte ID der 'period'-Tabelle für die 'service_id' in die Spalte 'period' in der cache-DB hinzu
     select_ids_sql = f"SELECT id, record_id FROM period LIMIT {batch_size} OFFSET ?"
     update_id_sql = f"UPDATE {new_table_name} SET period = :1 WHERE service_id = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM period").fetchone()[0]
+    start_time = time.time()
 
     for i in range(0, total_update_conditions, batch_size):
         if stop_thread_var.get(): return
@@ -64,6 +69,8 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         # committe die Änderungen
         cache_db.commit()
 
+        show_progress(i + batch_size, total_update_conditions, start_time, "Period-IDs aktualisieren")
+
     
     # Füge die Spalte 'start_time' hinzu
     cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN start_time TEXT;")
@@ -76,6 +83,7 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
     update_start_time_sql = f"UPDATE {new_table_name} SET start_time = :1 WHERE record_id = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM stop_times WHERE stop_sequence = 1").fetchone()[0]
+    start_time = time.time()
 
     for i in range(0, total_update_conditions, batch_size):
         if stop_thread_var.get(): return
@@ -88,6 +96,8 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         cache_db.executemany(update_start_time_sql, start_time_ids)
         # committe die Änderungen
         cache_db.commit()
+
+        show_progress(i + batch_size, total_update_conditions, start_time, "Startzeiten aktualisieren")
 
     # Füge die Spalte 'headsign' hinzu, wenn noch nicht vorhanden
     if "trip_headsign" not in old_table_columns:
@@ -105,27 +115,25 @@ def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         SELECT tp.name, st.trip_id FROM stop_times st
         JOIN traffic_point tp ON st.stop_id = tp.record_id
         WHERE st.stop_sequence = (SELECT MAX(stop_sequence) FROM stop_times WHERE trip_id = st.trip_id)
-        AND st.stop_id IS NOT NULL
-        AND st.stop_sequence IS NOT NULL
-        AND st.trip_id IS NOT NULL
-        AND st.trip_id IN (SELECT record_id FROM {new_table_name} WHERE headsign = "" OR headsign IS NULL)
+        AND st.trip_id IN (SELECT record_id FROM {new_table_name} WHERE headsign IS NULL OR headsign = "")
         LIMIT {batch_size} OFFSET ?
     """
     update_headsign_sql = f"UPDATE {new_table_name} SET headsign = :1 WHERE record_id = :2"
 
-    offset = 0
-    while True:
-        if stop_thread_var.get(): return
+    total_update_conditions = cache_db.execute(f"""
+        SELECT COUNT(*) FROM stop_times st
+        JOIN traffic_point tp ON st.stop_id = tp.record_id
+        WHERE st.stop_sequence = (SELECT MAX(stop_sequence) FROM stop_times WHERE trip_id = st.trip_id)
+        AND st.trip_id IN (SELECT record_id FROM {new_table_name} WHERE headsign IS NULL OR headsign = "")
+    """).fetchone()[0]
+    start_time = time.time()
 
-        # Hole die Kombinationen aus name und trip_id aus der stop_times-Tabelle
-        headsign_ids = cache_db.execute(select_headsign_sql, (offset,)).fetchall()
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+        headsign_ids = cache_db.execute(select_headsign_sql, (i,)).fetchall()
         if not headsign_ids:
             break
-        # Wandle die Kombinationen in eine Liste von Tupeln um [(name, trip_id)]
         headsign_ids = [(str(name), trip_id) for name, trip_id in headsign_ids]
-        # Führe das Update-Statement aus
         cache_db.executemany(update_headsign_sql, headsign_ids)
-        # committe die Änderungen
         cache_db.commit()
-        # Erhöhe den Offset um die Anzahl der gefundenen Einträge
-        offset += len(headsign_ids)
+        show_progress(i + batch_size, total_update_conditions, start_time, "Headsigns aktualisieren")

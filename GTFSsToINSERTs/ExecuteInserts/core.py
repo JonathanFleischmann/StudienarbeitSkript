@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 from preset_values import column_names_map, column_datatype_map, unique_column_map
 
 def get_str_array(value_array):
@@ -200,3 +201,15 @@ def get_unique_columns_for_table(table_name: str) -> list[str]:
     else:
         raise ValueError(f"Für die Tabelle {table_name} sind keine eindeutigen Spalten definiert.")
     
+
+
+# Fortschrittsanzeige für die Updates
+def show_progress(current, total, start_time, message):
+    elapsed_time = time.time() - start_time
+    progress_percent = round((current / total) * 100, 1)
+    avg_time_per_record = elapsed_time / current if current > 0 else 0
+    estimated_remaining_time = avg_time_per_record * (total - current)
+    remaining_minutes = int(estimated_remaining_time // 60)
+    remaining_seconds = int(estimated_remaining_time % 60)
+    print(f"\r{message} Fortschritt: **{progress_percent}%** | "
+            f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**", end="")
