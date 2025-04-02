@@ -1,28 +1,26 @@
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_exception_table_database_table(calendar_dates_gtfs_table):
-    """
-    Bildet die GTFS-Tabelle 'calendar_dates' auf die Datenbank-Tabelle 'exception_table' ab.
-    
-    :param calendar_dates_gtfs_table: Die GTFS-Tabelle 'calendar_dates'
-    :return: Ein DataTable-Objekt für die Tabelle 'exception_table'
-    """
-    # Erhalte die Spalten der GTFS-Tabelle
-    gtfs_table_columns = calendar_dates_gtfs_table.get_columns()
+def clear_exception_table_cache_db_table(cache_db: sqlite3.Connection) -> None:
+    old_table_name = "calendar_dates"
+    new_table_name = "exception_table"
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle
-    new_and_used_columns = append_new_columns_and_get_used("exception_table", gtfs_table_columns)
+    # Erhalte die Spalten der Tabelle 'calendar_dates' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'calendar_dates' in 'exception_table'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'exception_table'
-    exception_table_database_table = DataTable("exception_table", database_table_columns)
-
-    # Füge die Datensätze der GTFS-Tabelle in die Datenbanktabelle ein
-    exception_table_database_table.set_all_values(
-        calendar_dates_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
-
-    return exception_table_database_table
+    for column in old_table_columns:
+        if column not in column_names_map[new_table_name]:
+            if column != "service_id":
+                table_edit_sql.append(f"ALTER TABLE {new_table_name} DROP COLUMN {column};")
+        elif column_names_map[new_table_name][column][0] != column:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN {column} TO {column_names_map[new_table_name][column][0]};")
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    cache_db.commit()

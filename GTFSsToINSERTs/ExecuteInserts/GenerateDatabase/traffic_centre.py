@@ -1,58 +1,104 @@
 import sys
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_traffic_centre_database_table(stops_gtfs_table, stop_times_gtfs_table, location_type_database_table):
-    """
-    Generiert die Datenbank-Tabelle 'traffic_centre' aus den GTFS-Tabellen 'stops' und 'stop_times' und entfernt Zentren aus den Haltestellen.
+def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
+    old_table_name = "stops"
+    new_table_name = "traffic_centre"
+
+    # Erhalte durch die Spalten der Tabelle 'stops' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
+
+    new_table_columns = []
+    used_old_table_columns = []
+
+    for column in old_table_columns:
+        if column in column_names_map[new_table_name]:
+            used_old_table_columns.append(column)
+            new_table_columns.append(column_names_map[new_table_name][column][0])
     
-    :param stops_gtfs_table: Die GTFS-Tabelle 'stops'
-    :param stop_times_gtfs_table: Die GTFS-Tabelle 'stop_times'
-    :param location_type_database_table: Die Datenbank-Tabelle 'location_type'
-    :return: Ein DataTable-Objekt für die Tabelle 'traffic_centre'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
-    """
-    # Erhalte die Spalten der GTFS-Tabelle 'stops'
-    gtfs_table_columns = stops_gtfs_table.get_columns()
+    # Erstelle die neue Tabelle 'traffic_centre' mit den neuen Spalten
+    create_table_sql = f"CREATE TABLE {new_table_name} ("
+    for column in new_table_columns:
+        if column == 'record_id':
+            create_table_sql += f"{column} TEXT PRIMARY KEY, "
+        else:
+            create_table_sql += f"{column} TEXT, "
+    create_table_sql = create_table_sql[:-2] + ");"
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'traffic_centre'
-    new_and_used_columns = append_new_columns_and_get_used("traffic_centre", gtfs_table_columns)
-
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    cache_db.execute(create_table_sql)
+    cache_db.commit()
 
     # Überprüfe, ob die Spalte 'parent_station' vorhanden ist
-    if "parent_station" not in gtfs_table_columns:
+    if "parent_station" not in old_table_columns:
         print(f"Es wurden keine Verknüpfungen zu zentralen Verkehrsknotenpunkten gefunden", file=sys.stderr)
         
-        # Erstelle ein DataTable-Objekt für die Tabelle 'traffic_centre'
-        traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
+        return
+    
+    
+    # Erstelle das Select-Statement, um die gesuchten Daten aus der cache-DB zu holen:
+    #   Finde in der Tabelle 'stops' alle Einträge, die parent_stations von anderen Einträgen sind,
+    #   selbst aber keine parent_station haben und auf die keine Referenz von der Tabelle 'stop_times' existiert
+    select_sql = f"""
+        SELECT {', '.join(used_old_table_columns)} 
+        FROM {old_table_name} s1
+        WHERE (s1.parent_station IS NULL OR s1.parent_station = '')
+        AND EXISTS (
+            SELECT 1 FROM {old_table_name} s2 WHERE s2.parent_station = s1.stop_id
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM stop_times st WHERE st.stop_id = s1.stop_id
+        )
+    """
 
-        return traffic_centre_database_table
+    # Erstelle das Insert-Statement, um die Daten in die neue Tabelle 'traffic_centre' zu übertragen    
+    insert_sql = f"INSERT INTO {new_table_name} ({', '.join(new_table_columns)}) VALUES ({', '.join(['?'] * len(new_table_columns))})"
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'traffic_centre'
-    traffic_centre_database_table = DataTable("traffic_centre", database_table_columns)
+    # Erstelle ein Delete-Statement, um die Daten aus der alten Tabelle 'stops' zu löschen
+    delete_sql = f"DELETE FROM {old_table_name} WHERE record_id = ?"
 
-    # Erhalte die eindeutigen Werte der GTFS-Tabelle 'stops'
-    stops = stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
+    offset = 0
+    while True:
+        if stop_thread_var.get(): return
 
-    # Finde in der GTFS-Tabelle 'stops' alle Einträge, die parent_stations von anderen Einträgen sind,
-    # selbst aber keine parent_station haben und auf die keine Referenz von 'stop_times' existiert
-    parent_stations = stops_gtfs_table.get_map_with_column_as_key_and_id_as_value("parent_station")
-    stop_times = stop_times_gtfs_table.get_map_with_column_as_key_and_id_as_value("stop_id")
-    location_type_index = stops_gtfs_table.get_columns().index("location_type")
-    for parent_station, stop_ids in parent_stations.items():
-        if parent_station is None:
-            continue
-        if (stops_gtfs_table.get_value(parent_station, "parent_station") is None or stops_gtfs_table.get_value(parent_station, "parent_station") == "") and parent_station not in stop_times:
-            traffic_centre_database_table.add_record(parent_station, stops[parent_station])
-            stops_gtfs_table.delete_record(parent_station)
+        # Hole die Daten aus der alten Tabelle 'stops' -> Ergebnis ist eine Liste von Tupeln
+        # [(record_id, stop_name, stop_lat, ...)]
+        rows = cache_db.execute(select_sql + f" LIMIT {batch_size} OFFSET ?", (offset,)).fetchall()
 
-    # Ersetze den Typ aus dem GTFS-File durch die neu generierte ID des 'location_type'
-    location_type_id_map = location_type_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, location_type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
-        location_type_new_id = location_type_id_map[location_type[0]][0]
-        traffic_centre_database_table.set_value(record_id, "location_type", location_type_new_id)
+        if not rows:
+            break
 
-    return traffic_centre_database_table
+        # Füge die Datensätze in die neue Tabelle 'traffic_centre' ein
+        cache_db.executemany(insert_sql, rows)
+        
+        # Lösche die Datensätze aus der alten Tabelle 'stops'
+        # Erstelle eine Liste von record_ids, die gelöscht werden sollen
+        record_ids_to_delete = [row[0] for row in rows]
+        # Führe das Delete-Statement aus
+        cache_db.executemany(delete_sql, [(record_id,) for record_id in record_ids_to_delete])
+
+        # committe die Änderungen
+        cache_db.commit()
+
+        offset += batch_size
+
+    # Ersetze den 'location_type' in der Spalte 'location_type' in der cache-DB durch die neu generierte ID der 'location_type'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM location_type LIMIT {batch_size} OFFSET ?"
+
+    update_id_sql = f"UPDATE {new_table_name} SET location_type = :1 WHERE location_type = :2"
+
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM location_type").fetchone()[0]
+
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der location_type-Tabelle
+        location_type_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        location_type_ids = [(str(id), record_id) for id, record_id in location_type_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, location_type_ids)
+        # committe die Änderungen
+        cache_db.commit()

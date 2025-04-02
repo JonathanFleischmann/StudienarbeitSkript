@@ -1,229 +1,301 @@
-import copy
-import time
-from data_storage import DataTable
-from ExecuteInserts.core import get_minute_difference, get_time_when_more_than_24_h, append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_path_database_table(stop_times_gtfs_table, pathways_gtfs_table, ride_database_table, traffic_point_database_table, stop_type_database_table, walk_type_database_table, stop_thread_var):
+def clear_path_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
+    old_table_name = "stop_times"
+    new_table_name = "path"
+
+    # Erhalte die Spalten der Tabelle 'stop_times' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
+
+    distination_in_ride: bool = False
+
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'stop_times' in 'path'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
+    # Übertrage die Spaltennamen aus der Tabelle 'stop_times' in die neue Tabelle 'path'
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN trip_id TO ride;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN stop_sequence TO sequence;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN stop_id TO start_point;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN end_point TEXT;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN arrival_time TO arrival_time;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN departure_time TO departure_time;")
+    if "stop_headsign" in old_table_columns:
+        table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN stop_headsign TO destination;")
+    # wenn die Spalte 'stop_headsign' in der Tabelle 'stop_times' nicht vorhanden ist,
+    # aber die Spalte 'headsign' in der Tabelle 'ride' vorhanden ist, dann füge die Spalte 'destination' hinzu
+    else:
+        table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN destination TEXT;")
+        distination_in_ride = True
+    if "pickup_type" in old_table_columns:
+        table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN pickup_type TO enter_type;")
+    if "drop_off_type" in old_table_columns:
+        table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN drop_off_type TO descend_type;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN is_ride TEXT DEFAULT '1';")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN min_travel_time TEXT;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN walk_type TEXT;")
+
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    cache_db.commit()
+
+    # Fülle die Spalte 'end_point' in der Tabelle 'path' mit den Werten aus der Spalte 'start_point' aus dem Datensatz mit der
+    # nächsthöheren 'stop_sequence' und dem gleichen Wert in der Spalte 'ride' in der Tabelle 'path'
+    # und die Spalte 'arrival_time' in der Tabelle 'path' mit den Werten aus der Spalte 'arrival_time' aus dem Datensatz mit der
+    # nächsthöheren 'stop_sequence' und dem gleichen Wert in der Spalte 'ride' in der Tabelle 'path'
+    update_sql = f"""
+        UPDATE {new_table_name}
+        SET 
+            end_point = (
+                SELECT start_point 
+                FROM {new_table_name} AS next_row
+                WHERE next_row.ride = {new_table_name}.ride
+                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+            ),
+            arrival_time = (
+                SELECT arrival_time
+                FROM {new_table_name} AS next_row
+                WHERE next_row.ride = {new_table_name}.ride
+                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+            )
+        WHERE end_point IS NULL
+        AND EXISTS (
+            SELECT 1
+            FROM {new_table_name} AS next_row
+            WHERE next_row.ride = {new_table_name}.ride
+            AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+        );
+        """
+    cache_db.execute(update_sql)
+    cache_db.commit()
+
+
+    # Fülle die Spalte 'descend_type' in der Tabelle 'path' mit den Werten aus der Spalte 'descend_type' aus dem Datensatz mit der
+    # nächsthöheren 'stop_sequence' und dem gleichen Wert in der Spalte 'ride' in der Tabelle 'path'
+    if "drop_off_type" in old_table_columns:
+        update_sql = f"""
+        UPDATE {new_table_name}
+        SET 
+            descend_type = (
+                SELECT descend_type
+                FROM {new_table_name} AS next_row
+                WHERE next_row.ride = {new_table_name}.ride
+                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+            )
+        WHERE end_point IS NULL
+        AND EXISTS (
+            SELECT 1
+            FROM {new_table_name} AS next_row
+            WHERE next_row.ride = {new_table_name}.ride
+            AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+        );
+        """
+        cache_db.execute(update_sql)
+        cache_db.commit()
+
+    # update die Spalte 'min_travel_time' in der Tabelle 'path' mit den Werten aus der Spalte 'arrival_time' 
+    # minus der Spalte 'departure_time' in Minuten aus der gleichen Zeile in der Tabelle 'path'
+    # und setze dann die Spalten 'arrival_time' und 'departure_time' in ein 24h Format (HH:MM:SS)
+    # liegen im Format HH:MM:SS vor, gehen aber über 24h hinaus
+    update_sql = f"""
+        UPDATE {new_table_name}
+        SET
+            min_travel_time = 
+                CAST((strftime('%H', arrival_time) * 60 + strftime('%M', arrival_time)) AS INTEGER) -
+                CAST((strftime('%H', departure_time) * 60 + strftime('%M', departure_time)) AS INTEGER),
+            arrival_time =
+                CASE
+                    WHEN CAST(strftime('%H', arrival_time) AS INTEGER) >= 24 THEN
+                        strftime('%H:%M:%S', arrival_time, '-24 hours')
+                    ELSE
+                        arrival_time
+                END,
+            departure_time =
+                CASE
+                    WHEN CAST(strftime('%H', departure_time) AS INTEGER) >= 24 THEN
+                        strftime('%H:%M:%S', departure_time, '-24 hours')
+                    ELSE
+                        departure_time
+                END
+        WHERE arrival_time IS NOT NULL AND departure_time IS NOT NULL;
     """
-    Generiert die Datenbank-Tabelle 'path' aus den GTFS-Tabellen 'stop_times' und 'pathways' sowie den Datenbank-Tabellen 'ride', 'traffic_point', 'stop_type' und 'walk_type'.
+    cache_db.execute(update_sql)
+    cache_db.commit()
+
+    # Fülle die Spalte 'destination' in der Tabelle 'path' mit den Werten aus der Spalte 'headsign' aus der Tabelle 'ride'
+    # mit der entsprechenden 'ride' in der Tabelle 'path' wenn 'headsign' in der Tabelle 'ride' vorhanden ist aber 
+    # 'stop_headsign' in der Tabelle 'stop_times' nicht vorhanden war
+    if distination_in_ride:
+        update_sql = f"""
+            UPDATE {new_table_name}
+            SET destination = (
+                SELECT headsign
+                FROM ride AS r
+                WHERE r.record_id = {new_table_name}.ride
+            )
+            WHERE destination IS NULL;
+        """
+        cache_db.execute(update_sql)
+        cache_db.commit()
+
+    # lösche die Datensätze, die die höchste 'stop_sequence' für jeden 'ride' in der Tabelle 'path' haben
+    delete_sql = f"""
+        DELETE FROM {new_table_name}
+        WHERE record_id IN (
+            SELECT record_id
+            FROM {new_table_name} AS t1
+            WHERE t1.stop_sequence = (
+                SELECT MAX(t2.stop_sequence)
+                FROM {new_table_name} AS t2
+                WHERE t2.ride = t1.ride
+            )
+        );
+    """
+    cache_db.execute(delete_sql)
+    cache_db.commit()
+
+    # Ersetze die 'ride' in der Tabelle 'path' mit der ID der 'ride'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM ride LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET ride = :1 WHERE ride = :2"
+
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM ride").fetchone()[0]
+
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der ride-Tabelle
+        ride_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        ride_ids = [(str(id), record_id) for id, record_id in ride_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, ride_ids)
+        # committe die Änderungen
+        cache_db.commit()
+
+    # Ersetze die 'enter_type' und 'descend_type' in der Tabelle 'path' mit der ID der 'stop_type'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM stop_type LIMIT {batch_size} OFFSET ?"
+    update_id_sql_enter = f"UPDATE {new_table_name} SET enter_type = :1 WHERE enter_type = :2"
+    update_id_sql_descend = f"UPDATE {new_table_name} SET descend_type = :1 WHERE descend_type = :2"
+
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM stop_type").fetchone()[0]
+
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der stop_type-Tabelle
+        stop_type_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        stop_type_ids = [(str(id), record_id) for id, record_id in stop_type_ids]
+        # Führe das Update-Statement für enter_type aus
+        cache_db.executemany(update_id_sql_enter, stop_type_ids)
+        # committe die Änderungen
+        cache_db.commit()
+        # Führe das Update-Statement für descend_type aus
+        cache_db.executemany(update_id_sql_descend, stop_type_ids)
+        # committe die Änderungen
+        cache_db.commit()
     
-    :param stop_times_gtfs_table: Die GTFS-Tabelle 'stop_times'
-    :param pathways_gtfs_table: Die GTFS-Tabelle 'pathways'
-    :param ride_database_table: Die Datenbank-Tabelle 'ride'
-    :param traffic_point_database_table: Die Datenbank-Tabelle 'traffic_point'
-    :param stop_type_database_table: Die Datenbank-Tabelle 'stop_type'
-    :param walk_type_database_table: Die Datenbank-Tabelle 'walk_type'
-    :param stop_thread_var: Ein tkinter-Boolean-Objekt, das angibt, ob der Prozess abgebrochen wurde
-    :return: Ein DataTable-Objekt für die Tabelle 'path'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
-    """
-    # Erhalte die Spalten der GTFS-Tabelle 'stop_times'
-    stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
+    # Finde heraus, ob die Tabelle 'pathways' in der Datenbank vorhanden ist
+    pathways_exists = cache_db.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='pathways'").fetchone()
+    if pathways_exists is not None:
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'path'
-    new_and_used_columns_from_stop_times = append_new_columns_and_get_used("path", stop_times_gtfs_table_columns)
+        # Füge die Datensätze aus der Tabelle 'pathways' in die Tabelle 'path' ein
+        # Setze die Spalten 'ride', 'sequence', 'departure_time', 'arrival_time' und 'destination' nicht
+        # 'is_ride' auf 0, 'min_travel_time' auf den Wert aus der Spalte 'traversal_time',
+        # 'walk_type' auf den Wert aus der Spalte 'pathway_mode', 'start_point' auf den Wert aus der Spalte 'from_stop_id'
+        # und 'end_point' auf den Wert aus der Spalte 'to_stop_id' in der Tabelle 'pathways'
+        # und dupliziere die Zeile und tausche 'start_point' und 'end_point' aus, wenn 'is_bidirectional' = 1
 
-    database_table_columns = new_and_used_columns_from_stop_times["new_columns"]
-    used_stop_times_columns = new_and_used_columns_from_stop_times["used_columns"]
+        # Erhalte die Spalten der Tabelle 'pathways' aus der Datenbank
+        pathways_gtfs_table_columns = cache_db.execute(f"PRAGMA table_info(pathways)").fetchall()
+        # Konvertiere die Spalten in eine Liste von Strings
+        pathways_gtfs_table_columns = [column[1] for column in pathways_gtfs_table_columns]
 
-    # Füge zusätzliche Spalten hinzu
-    database_table_columns.append("is_ride")
-    database_table_columns.append("min_travel_time")
+        # finde heraus, ob die Spalte 'traversal_time' in der Tabelle 'pathways' vorhanden ist
+        traversal_time_in_pathways: bool = "traversal_time" in pathways_gtfs_table_columns
+        if traversal_time_in_pathways:
+            # Erstelle die SQL-Statements, die die Datensätze aus der Tabelle 'pathways' in die Tabelle 'path' entsprechend übertragen
+            # wenn die Spalte 'traversal_time' in der Tabelle 'pathways' vorhanden ist (also min_travel_time gesetzt werden kann)
+            insert_sql = f"""
+                INSERT INTO {new_table_name} (is_ride, min_travel_time, walk_type, start_point, end_point)
+                SELECT 0, traversal_time, pathway_mode, from_stop_id, to_stop_id
+                FROM pathways
+                WHERE is_bidirectional = 1;
+            """
+        else:
+            # Erstelle die SQL-Statements, die die Datensätze aus der Tabelle 'pathways' in die Tabelle 'path' entsprechend übertragen
+            # wenn die Spalte 'traversal_time' in der Tabelle 'pathways' nicht vorhanden ist (also min_travel_time nicht gesetzt werden kann)
+            insert_sql = f"""
+                INSERT INTO {new_table_name} (is_ride, walk_type, start_point, end_point)
+                SELECT 0, pathway_mode, from_stop_id, to_stop_id
+                FROM pathways
+                WHERE is_bidirectional = 1;
+            """
+        cache_db.execute(insert_sql)
+        cache_db.commit()
+        
+        # Finde heraus, ob die Spalte 'is_bidirectional' in der Tabelle 'pathways' vorhanden ist
+        is_bidirectional_in_pathways: bool = "is_bidirectional" in pathways_gtfs_table_columns
+        if is_bidirectional_in_pathways:
+            # Erstelle die SQL-Statements, die die Datensätze aus der Tabelle 'pathways' in die Tabelle 'path' entsprechend übertragen
+            # wenn die Spalte 'is_bidirectional' in der Tabelle 'pathways' vorhanden ist (also die Zeile dupliziert werden kann)
+            if traversal_time_in_pathways:
+                insert_sql = f"""
+                    INSERT INTO {new_table_name} (is_ride, min_travel_time, walk_type, start_point, end_point)
+                    SELECT 0, traversal_time, pathway_mode, to_stop_id, from_stop_id
+                    FROM pathways
+                    WHERE is_bidirectional = 1;
+                """
+            else:
+                insert_sql = f"""
+                    INSERT INTO {new_table_name} (is_ride, min_travel_time, walk_type, start_point, end_point)
+                    SELECT 0, traversal_time, pathway_mode, to_stop_id, from_stop_id
+                    FROM pathways
+                    WHERE is_bidirectional = 1;
+                """
+            cache_db.execute(insert_sql)
+            cache_db.commit()
 
-    # Überprüfe, ob die Spalte 'stop_headsign' in 'stop_times' und 'headsign' in 'ride' vorhanden sind
-    destination_in_stop_times = "stop_headsign" in stop_times_gtfs_table_columns
-    destination_in_ride = "headsign" in ride_database_table.get_columns()
-    if destination_in_ride and not destination_in_stop_times:
-        database_table_columns.append("destination")
+    # Ersetze die 'start_point' und 'end_point' in der Tabelle 'path' mit der ID der 'traffic_point'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM traffic_point LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET start_point = :1 WHERE start_point = :2"
+    update_id_sql_end = f"UPDATE {new_table_name} SET end_point = :1 WHERE end_point = :2"
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'path' aus 'pathways'
-    used_pathways_columns = []
-    if pathways_gtfs_table is not None:
-        pathways_gtfs_table_columns = pathways_gtfs_table.get_columns()
-        new_and_used_columns_from_pathways = append_new_columns_and_get_used("path", pathways_gtfs_table_columns, already_new_columns=database_table_columns)
-        database_table_columns = new_and_used_columns_from_pathways["new_columns"]
-        used_pathways_columns = new_and_used_columns_from_pathways["used_columns"]
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM traffic_point").fetchone()[0]
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'path'
-    path_database_table = DataTable("path", database_table_columns)
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
 
-    # Initialisiere Variablen für den Fortschritt
-    print("🔨 Generiere Tabelle path...")
-    total_datasets = stop_times_gtfs_table.get_record_number()
-    if pathways_gtfs_table is not None:
-        total_datasets += pathways_gtfs_table.get_record_number()
-    progressed_records = 0
-    progress_percent = 0
-    start_time = time.time()
+        # Hole die Kombinationen aus ids und record_ids aus der traffic_point-Tabelle
+        traffic_point_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        traffic_point_ids = [(str(id), record_id) for id, record_id in traffic_point_ids]
+        # Führe das Update-Statement für start_point aus
+        cache_db.executemany(update_id_sql, traffic_point_ids)
+        # committe die Änderungen
+        cache_db.commit()
+        # Führe das Update-Statement für end_point aus
+        cache_db.executemany(update_id_sql_end, traffic_point_ids)
+        # committe die Änderungen
+        cache_db.commit()
 
-    path_data = {}
-    generated_id = 0
+    # Ersetze die 'walk_type' in der Tabelle 'path' mit der ID der 'walk_type'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM walk_type LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET walk_type = :1 WHERE walk_type = :2"
 
-    # Erstelle eine Map für die Spaltenpositionen in 'stop_times'
-    stop_times_column_positions = {column: stop_times_gtfs_table_columns.index(column) for column in used_stop_times_columns}
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM walk_type").fetchone()[0]
 
-    # Verarbeite die Datensätze aus 'stop_times'
-    for record_id, record in stop_times_gtfs_table.get_distinct_values_of_all_records(used_stop_times_columns).items():
-        data_map = {}
-        ride = record[stop_times_column_positions["trip_id"]]
-        data_map["ride"] = ride
-        data_map["sequence"] = record[stop_times_column_positions["stop_sequence"]]
-        next_path_id = str(ride) + str(int(data_map["sequence"]) + 1)
-        next_path = stop_times_gtfs_table.get_record(next_path_id)
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
 
-        if next_path is not None:
-            data_map["is_ride"] = 1
-            data_map["walk_type"] = None
-            data_map["departure_time"] = get_time_when_more_than_24_h(record[stop_times_column_positions["departure_time"]])
-            data_map["arrival_time"] = get_time_when_more_than_24_h(record[stop_times_column_positions["arrival_time"]])
-            if destination_in_stop_times:
-                data_map["destination"] = record[stop_times_column_positions["stop_headsign"]]
-            elif destination_in_ride:
-                data_map["destination"] = ride_database_table.get_value(ride, "headsign")
-            data_map["min_travel_time"] = get_minute_difference(data_map["arrival_time"], data_map["departure_time"])
-            data_map["start_point"] = record[stop_times_column_positions["stop_id"]]
-            data_map["end_point"] = next_path[stop_times_column_positions["stop_id"]]
-            data_map["enter_type"] = record[stop_times_column_positions["pickup_type"]]
-            data_map["descend_type"] = next_path[stop_times_column_positions["drop_off_type"]]
-
-            data = [copy.deepcopy(data_map[column]) for column in database_table_columns]
-            path_data[generated_id] = data
-            generated_id += 1
-
-        progressed_records += 1
-        if progressed_records % 10000 == 0:
-            if stop_thread_var.get(): return
-            elapsed_time = time.time() - start_time
-            progress_percent = round((progressed_records / (total_datasets + total_datasets * 0.2)) * 100, 1)
-            estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-            remaining_minutes = int(estimated_remaining_time // 60)
-            remaining_seconds = int(estimated_remaining_time % 60)
-            print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    # Erstelle eine Map für die Spaltenpositionen in 'pathways'
-    pathways_columns_positions = {column: pathways_gtfs_table_columns.index(column) for column in used_pathways_columns}
-
-    # Verarbeite die Datensätze aus 'pathways'
-    if pathways_gtfs_table is not None:
-        for record_id, record in pathways_gtfs_table.get_distinct_values_of_all_records(used_pathways_columns).items():
-            data_map = {}
-            data_map["is_ride"] = 0
-            data_map["ride"] = None
-            data_map["sequence"] = None
-            data_map["departure_time"] = None
-            data_map["arrival_time"] = None
-            data_map["destination"] = None
-            data_map["min_travel_time"] = record[pathways_columns_positions["traversal_time"]]
-            data_map["walk_type"] = record[pathways_columns_positions["pathway_mode"]]
-            data_map["start_point"] = record[pathways_columns_positions["from_stop_id"]]
-            data_map["end_point"] = next_path[pathways_columns_positions["to_stop_id"]]
-
-            data = [copy.deepcopy(data_map[column]) for column in database_table_columns]
-            path_data[generated_id] = data
-            generated_id += 1
-
-            if "is_bidirectional" in used_pathways_columns and record[pathways_columns_positions["is_bidirectional"]] == 1:
-                data_map["start_point"] = record[pathways_columns_positions["to_stop_id"]]
-                data_map["end_point"] = record[pathways_columns_positions["from_stop_id"]]
-                data = [copy.deepcopy(data_map[column]) for column in database_table_columns]
-                path_data[generated_id] = data
-                generated_id += 1
-
-            progressed_records += 1
-            if progressed_records % 10000 == 0:
-                if stop_thread_var.get(): return
-                elapsed_time = time.time() - start_time
-                progress_percent = round((progressed_records / (total_datasets + total_datasets * 0.2)) * 100, 1)
-                estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-                remaining_minutes = int(estimated_remaining_time // 60)
-                remaining_seconds = int(estimated_remaining_time % 60)
-                print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    # Setze alle Werte in die Datenbanktabelle 'path'
-    path_database_table.set_all_values(path_data)
-
-    # Initialisiere Variablen für den Fortschritt
-    progressed_records = 0
-    total_datasets = path_database_table.get_record_number() * 3
-    if pathways_gtfs_table is not None:
-        total_datasets += path_database_table.get_record_number() * 1
-
-    # Ersetze die ride-id aus der stop_times-gtfs-file durch die neu generierte id der ride-table
-    ride_id_map = ride_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, ride in path_database_table.get_distinct_values_of_all_records(["ride"]).items():
-        progressed_records += 1
-        if ride[0] is None:
-            continue
-        ride_new_id = ride_id_map[ride[0]][0]
-        path_database_table.set_value(record_id, "ride", ride_new_id)
-
-        if progressed_records % 100000 == 0:
-            if stop_thread_var.get(): return
-            elapsed_time = time.time() - start_time
-            progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
-            estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-            remaining_minutes = int(estimated_remaining_time // 60)
-            remaining_seconds = int(estimated_remaining_time % 60)
-            print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    # Ersetze start_point und end_point aus der stop_times-gtfs-file/pathways-gtfs_file durch die neu generierte id der traffic_point-table
-    traffic_point_id_map = traffic_point_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, traffic_points in path_database_table.get_distinct_values_of_all_records(["start_point", "end_point"]).items():
-        start_point_new_id = traffic_point_id_map[traffic_points[0]][0]
-        end_point_new_id = traffic_point_id_map[traffic_points[1]][0]
-        path_database_table.set_value(record_id, "start_point", start_point_new_id)
-        path_database_table.set_value(record_id, "end_point", end_point_new_id)
-
-        progressed_records += 1
-        if progressed_records % 100000 == 0:
-            if stop_thread_var.get(): return
-            elapsed_time = time.time() - start_time
-            progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
-            estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-            remaining_minutes = int(estimated_remaining_time // 60)
-            remaining_seconds = int(estimated_remaining_time % 60)
-            print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    # Ersetze enter_type und descend_type aus der stop_times-gtfs-file durch die neu generierte id der stop_type-table
-    stop_type_id_map = stop_type_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, stop_types in path_database_table.get_distinct_values_of_all_records(["enter_type", "descend_type"]).items():
-        progressed_records += 1
-        if stop_types[0] is None or stop_types[1] is None:
-            continue
-        enter_type_new_id = stop_type_id_map[stop_types[0]][0]
-        descend_type_new_id = stop_type_id_map[stop_types[1]][0]
-        path_database_table.set_value(record_id, "enter_type", enter_type_new_id)
-        path_database_table.set_value(record_id, "descend_type", descend_type_new_id)
-
-        if progressed_records % 100000 == 0:
-            if stop_thread_var.get(): return
-            elapsed_time = time.time() - start_time
-            progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
-            estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-            remaining_minutes = int(estimated_remaining_time // 60)
-            remaining_seconds = int(estimated_remaining_time % 60)
-            print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    # Ersetze walk_type aus der pathways-gtfs-file durch die neu generierte id der walk_type-table
-    if pathways_gtfs_table is not None:
-        walk_type_id_map = walk_type_database_table.get_distinct_values_of_all_records(["id"])
-        for record_id, walk_type in path_database_table.get_distinct_values_of_all_records(["walk_type"]).items():
-            progressed_records += 1
-            if walk_type[0] is None:
-                continue
-            walk_type_new_id = walk_type_id_map[walk_type[0]][0]
-            path_database_table.set_value(record_id, "walk_type", walk_type_new_id)
-
-            if progressed_records % 100000 == 0:
-                if stop_thread_var.get(): return
-                elapsed_time = time.time() - start_time
-                progress_percent = round((0.8 + progressed_records / total_datasets * 0.2) * 100, 1)
-                estimated_remaining_time = elapsed_time * 1 / (progress_percent / 100) - elapsed_time
-                remaining_minutes = int(estimated_remaining_time // 60)
-                remaining_seconds = int(estimated_remaining_time % 60)
-                print(f"\r  Fortschritt: {progress_percent}% | Geschätzte Restzeit: {remaining_minutes}m {remaining_seconds}s        ", end="")
-
-    print("\r✅ Tabelle path generiert.                                                     ")
-
-    return path_database_table
+        # Hole die Kombinationen aus ids und record_ids aus der walk_type-Tabelle
+        walk_type_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        walk_type_ids = [(str(id), record_id) for id, record_id in walk_type_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, walk_type_ids)
+        # committe die Änderungen
+        cache_db.commit()

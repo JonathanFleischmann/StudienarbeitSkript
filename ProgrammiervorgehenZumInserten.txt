@@ -22,3 +22,10 @@ Bei stop_times gehen bei einem trip_id key in der map datensätze verloren, man 
 Erkenntnis: Rides müssen am Ende zusammen mit den stop_times eingefügt werden, da sie sich nicht immer anhand eigener Werte unterscheiden
 
 exceptions nach rides, werden eig den periods zugewiesen, aber hier über ride_exception
+
+
+
+Neue Überlegungen bei database_cache: 
+Problem: wenn immer komplette db in memory geladen wird dann irgendwann ein Problem. Selbst schon bei großen GTFS-Dateien problematisch
+-> Lösung: ich lade die GTFS-Daten nicht in memory sondern speichere sie in temporärer Datenbank auf die ich die Änderungen ausführe
+=> Am anfang wird skript sehr langsam sein, aber später optimieren

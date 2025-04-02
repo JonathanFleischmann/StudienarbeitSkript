@@ -1,6 +1,5 @@
 from datetime import datetime
 from preset_values import column_names_map, column_datatype_map, unique_column_map
-from data_storage import DatatypeEnum
 
 def get_str_array(value_array):
     """
@@ -177,7 +176,7 @@ def append_new_columns_and_get_used(for_table_name: str, from_table_columns: lis
     
     return {"new_columns": new_columns, "used_columns": used_columns}
 
-def get_datatypes_for_table(table_name: str) -> dict[str,DatatypeEnum]:
+def get_datatypes_for_table(table_name: str):
     """
     Gibt die Datentypen für alle möglichen Spalten einer Tabelle zurück.
 

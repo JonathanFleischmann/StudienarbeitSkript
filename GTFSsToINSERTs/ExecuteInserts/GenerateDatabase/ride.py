@@ -1,72 +1,131 @@
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_ride_database_table(trips_gtfs_table, period_database_table, route_database_table, stop_times_gtfs_table):
-    """
-    Generiert die Datenbank-Tabelle 'ride' aus den GTFS-Tabellen 'trips' und 'stop_times' sowie den Datenbank-Tabellen 'period' und 'route'.
+def clear_ride_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
+    old_table_name = "trips"
+    new_table_name = "ride"
+
+    # Erhalte die Spalten der Tabelle 'trips' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
     
-    :param trips_gtfs_table: Die GTFS-Tabelle 'trips'
-    :param period_database_table: Die Datenbank-Tabelle 'period'
-    :param route_database_table: Die Datenbank-Tabelle 'route'
-    :param stop_times_gtfs_table: Die GTFS-Tabelle 'stop_times'
-    :return: Ein DataTable-Objekt für die Tabelle 'ride'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
-    """
-    # Erhalte die Spalten der GTFS-Tabellen 'trips' und 'stop_times'
-    trips_gtfs_table_columns = trips_gtfs_table.get_columns()
-    stop_times_gtfs_table_columns = stop_times_gtfs_table.get_columns()
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'trips' in 'ride'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'ride'
-    new_and_used_columns = append_new_columns_and_get_used("ride", trips_gtfs_table_columns)
+    for column in old_table_columns:
+        if column not in column_names_map[new_table_name]:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} DROP COLUMN {column};")
+        elif column_names_map[new_table_name][column][0] != column:
+            if column == "service_id":
+                table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN period TEXT;")
+            else:
+                table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN {column} TO {column_names_map[new_table_name][column][0]};")
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    cache_db.commit()
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
 
-    # Überprüfe, ob die Spalten 'trip_headsign' und 'stop_headsign' vorhanden sind
-    trip_headsign_found = "trip_headsign" in trips_gtfs_table_columns
-    stop_times_headsign_found = "stop_headsign" in stop_times_gtfs_table_columns
+    # Ersetze die 'route_id' in der Spalte 'route' in der cache-DB durch die neu generierte ID der 'route'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM route LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET route = :1 WHERE route = :2"
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'ride'
-    ride_database_table = DataTable("ride", database_table_columns)
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM route").fetchone()[0]
 
-    # Füge die Datensätze der GTFS-Tabelle 'trips' in die Datenbanktabelle ein
-    ride_database_table.set_all_values(
-        trips_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
 
-    # Ersetze die 'route_id' aus dem GTFS-File durch die neu generierte ID der 'route'-Tabelle
-    route_id_map = route_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, route in ride_database_table.get_distinct_values_of_all_records(["route"]).items():
-        route_new_id = route_id_map[route[0]][0]
-        ride_database_table.set_value(record_id, "route", route_new_id)
+        # Hole die Kombinationen aus ids und record_ids aus der route-Tabelle
+        route_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        route_ids = [(str(id), record_id) for id, record_id in route_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, route_ids)
+        # committe die Änderungen
+        cache_db.commit()
 
-    # Ersetze die 'service_id' aus dem GTFS-File durch die neu generierte ID der 'period'-Tabelle
-    period_id_map = period_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, period in ride_database_table.get_distinct_values_of_all_records(["period"]).items():
-        period_new_id = period_id_map[period[0]][0]
-        ride_database_table.set_value(record_id, "period", period_new_id)
+    # Füge die neu generierte ID der 'period'-Tabelle für die 'service_id' in die Spalte 'period' in der cache-DB hinzu
+    select_ids_sql = f"SELECT id, record_id FROM period LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET period = :1 WHERE service_id = :2"
 
-    # Füge die Spalte 'start_time' zur Datenbanktabelle hinzu
-    ride_database_table.add_column("start_time")
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM period").fetchone()[0]
 
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der period-Tabelle
+        period_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        period_ids = [(str(id), record_id) for id, record_id in period_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, period_ids)
+        # committe die Änderungen
+        cache_db.commit()
+
+    
+    # Füge die Spalte 'start_time' hinzu
+    cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN start_time TEXT;")
+    cache_db.commit()
+    
     # Weise jedem Ride die Startzeit zu
-    for trip_id, record in ride_database_table.get_all_records().items():
-        start_stop_time = trip_id + "1"
-        start_time = stop_times_gtfs_table.get_value(start_stop_time, "departure_time")
-        ride_database_table.set_value(trip_id, "start_time", start_time)
+    # Hole dazu die Spalten 'departure_time' und 'trip_id' aus der Tabelle 'stop_times' wo 'stop_sequence' = 1
+    # und füge die Startzeit in die Spalte 'start_time' der Tabelle 'ride' ein wo 'record_id' = 'trip_id'
+    select_start_time_sql = f"SELECT departure_time, trip_id FROM stop_times WHERE stop_sequence = 1 LIMIT {batch_size} OFFSET ?"
+    update_start_time_sql = f"UPDATE {new_table_name} SET start_time = :1 WHERE record_id = :2"
 
-    # Weise jedem Ride den 'headsign' zu oder ersetze den 'headsign' aus dem GTFS-File, wenn für die Spalte kein Wert vorhanden ist
-    if stop_times_headsign_found:
-        if not trip_headsign_found:
-            ride_database_table.add_column("headsign")
-        else:
-            headsign_index = ride_database_table.get_columns().index("headsign")
-        for trip_id, record in ride_database_table.get_all_records().items():
-            if trip_headsign_found and record[headsign_index] != "" and record[headsign_index] is not None:
-                continue
-            start_stop_time = trip_id + "1"
-            headsign = stop_times_gtfs_table.get_value(start_stop_time, "stop_headsign")
-            ride_database_table.set_value(trip_id, "headsign", headsign)
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM stop_times WHERE stop_sequence = 1").fetchone()[0]
 
-    return ride_database_table
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus departure_time und trip_id aus der stop_times-Tabelle
+        start_time_ids = cache_db.execute(select_start_time_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(departure_time, trip_id)]
+        start_time_ids = [(str(departure_time), trip_id) for departure_time, trip_id in start_time_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_start_time_sql, start_time_ids)
+        # committe die Änderungen
+        cache_db.commit()
+
+    # Füge die Spalte 'headsign' hinzu, wenn noch nicht vorhanden
+    if "trip_headsign" not in old_table_columns:
+        cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN headsign TEXT;")
+        cache_db.commit()
+    
+    # Finde die letzte Haltestelle für jeden Trip und weise diese demm 'headsign' zu, wenn der 'headsign' leer ist
+    # Hole dazu die Spalten 'stop_id' und 'trip_id' aus der Tabelle 'stop_times' wo 'stop_sequence' = (SELECT MAX(stop_sequence) FROM stop_times WHERE trip_id = trip_id)
+    # finde zu dieser 'stop_id' den 'name' aus der Tabelle 'traffic_point' und füge den 'name' in die Spalte 'headsign' der Tabelle 'ride' ein wo 'record_id' = 'trip_id'
+    # joine dazu die Tabelle 'stop_times' mit der Tabelle 'traffic_point' mit der Bedingung 'stop_id' = 'record_id' 
+    # und 'stop_sequence' = (SELECT MAX(stop_sequence) FROM stop_times WHERE trip_id = trip_id) und 
+    # joine die Tabelle 'ride' mit der Tabelle 'stop_times' mit der Bedingung 'record_id' = 'trip_id' 
+    # und 'headsign' = ""
+    select_headsign_sql = f"""
+        SELECT tp.name, st.trip_id FROM stop_times st
+        JOIN traffic_point tp ON st.stop_id = tp.record_id
+        WHERE st.stop_sequence = (SELECT MAX(stop_sequence) FROM stop_times WHERE trip_id = st.trip_id)
+        AND st.stop_id IS NOT NULL
+        AND st.stop_sequence IS NOT NULL
+        AND st.trip_id IS NOT NULL
+        AND st.trip_id IN (SELECT record_id FROM {new_table_name} WHERE headsign = "" OR headsign IS NULL)
+        LIMIT {batch_size} OFFSET ?
+    """
+    update_headsign_sql = f"UPDATE {new_table_name} SET headsign = :1 WHERE record_id = :2"
+
+    offset = 0
+    while True:
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus name und trip_id aus der stop_times-Tabelle
+        headsign_ids = cache_db.execute(select_headsign_sql, (offset,)).fetchall()
+        if not headsign_ids:
+            break
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(name, trip_id)]
+        headsign_ids = [(str(name), trip_id) for name, trip_id in headsign_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_headsign_sql, headsign_ids)
+        # committe die Änderungen
+        cache_db.commit()
+        # Erhöhe den Offset um die Anzahl der gefundenen Einträge
+        offset += len(headsign_ids)

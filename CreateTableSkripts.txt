@@ -55,12 +55,12 @@ CREATE TABLE agency (
 
 CREATE TABLE route (
                        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                       name VARCHAR2(100) NOT NULL,
+                       name VARCHAR2(200) NOT NULL,
                        short_name VARCHAR2(10) NOT NULL,
                        type VARCHAR2(50),
                        description VARCHAR2(400),
                        agency NUMBER NOT NULL,
-                       CONSTRAINT unique_name_in_agency UNIQUE (name, agency),
+                       CONSTRAINT unique_name_short_name_and_agency_in_route UNIQUE (name, short_name, agency),
                        CONSTRAINT fk_agency FOREIGN KEY (agency) REFERENCES agency(id) ON DELETE CASCADE
 );
 

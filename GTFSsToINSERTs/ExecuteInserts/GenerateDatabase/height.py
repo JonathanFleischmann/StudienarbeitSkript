@@ -1,28 +1,27 @@
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_height_database_table(levels_gtfs_table):
-    """
-    Bildet die GTFS-Tabelle 'levels' auf die Datenbank-Tabelle 'height' ab.
-    
-    :param levels_gtfs_table: Die GTFS-Tabelle 'levels'
-    :return: Ein DataTable-Objekt für die Tabelle 'height'
-    """
-    # Erhalte die Spalten der GTFS-Tabelle
-    gtfs_table_columns = levels_gtfs_table.get_columns()
+def clear_height_cache_db_table(cache_db: sqlite3.Connection) -> None:
+    old_table_name = "levels"
+    new_table_name = "height"
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle
-    new_and_used_columns = append_new_columns_and_get_used("height", gtfs_table_columns)
+    # Erhalte die Spalten der Tabelle 'levels' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'levels' in 'height'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'height'
-    height_database_table = DataTable("height", database_table_columns)
-
-    # Füge die Datensätze der GTFS-Tabelle in die Datenbanktabelle ein
-    height_database_table.set_all_values(
-        levels_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
-
-    return height_database_table
+    for column in old_table_columns:
+        if column not in column_names_map[new_table_name]:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} DROP COLUMN {column};")
+        elif column_names_map[new_table_name][column][0] != column:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN {column} TO {column_names_map[new_table_name][column][0]};")
+    # führe die SQL-Statements aus
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    # committe die Änderungen
+    cache_db.commit()

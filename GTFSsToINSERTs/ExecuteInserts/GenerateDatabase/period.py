@@ -1,38 +1,49 @@
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_period_database_table(calendar_gtfs_table, weekdays_database_table):
-    """
-    Generiert die Datenbank-Tabelle 'period' aus der GTFS-Tabelle 'calendar' und setzt die Referenz auf die Tabelle 'weekdays'.
+def clear_period_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_thread_var) -> None:
+    old_table_name = "calendar"
+    new_table_name = "period"
     
-    :param calendar_gtfs_table: Die GTFS-Tabelle 'calendar'
-    :param weekdays_database_table: Die Datenbank-Tabelle 'weekdays'
-    :return: Ein DataTable-Objekt für die Tabelle 'period'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
-    """
-    # Erhalte die Spalten der GTFS-Tabelle 'calendar'
-    gtfs_table_columns = calendar_gtfs_table.get_columns()
+    # Erhalte die Spalten der Tabelle 'routes' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'period'
-    new_and_used_columns = append_new_columns_and_get_used("period", gtfs_table_columns)
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'calendar' in 'period'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
+    # Füge die Spalte 'weekdays' hinzu
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN weekdays TEXT;")
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    for column in old_table_columns:
+        if column not in column_names_map[new_table_name]:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} DROP COLUMN {column};")
+        elif column_names_map[new_table_name][column][0] != column:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN {column} TO {column_names_map[new_table_name][column][0]};")
+    # führe die SQL-Statements aus
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    # committe die Änderungen
+    cache_db.commit()
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'period'
-    period_database_table = DataTable("period", database_table_columns)
+    # Ersetze die 'weekdays' in der Spalte 'weekdays' in der cache-DB durch die neu generierte ID der 'weekdays'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM weekdays LIMIT {batch_size} OFFSET ?"
 
-    # Füge die Datensätze der GTFS-Tabelle in die Datenbanktabelle ein
-    period_database_table.set_all_values(
-        calendar_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
+    update_id_sql = f"UPDATE {new_table_name} SET weekdays = :1 WHERE record_id = :2"
 
-    # Füge die Spalte für die Foreign-Keys auf die 'weekdays' hinzu
-    period_database_table.add_column("weekdays")
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM weekdays").fetchone()[0]
 
-    # Setze die Werte der Foreign-Keys auf die 'weekdays'
-    for record_id, record in weekdays_database_table.get_distinct_values_of_all_records(["id"]).items():
-        period_database_table.set_value(record_id, "weekdays", record[0])
+    # Setze die Foreign-Keys auf die 'weekdays' Spalte
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
 
-    return period_database_table
+        # Hole die Kombinationen aus ids und record_ids aus der weekdays-Tabelle
+        weekdays_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        weekdays_ids = [(str(id), record_id) for id, record_id in weekdays_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, weekdays_ids)
+        # committe die Änderungen
+        cache_db.commit()

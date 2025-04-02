@@ -41,19 +41,23 @@ id_values = {
 
 column_names_map = {
     "agency": {
+        "record_id": ["record_id"],
         "agency_name": ["name"],
         "agency_url": ["url"],
         "agency_lang": ["language"]
     },
     "exception_table": {
+        "record_id": ["record_id"],
         "date": ["exception_date"]
     },
     "height": {
+        "record_id": ["record_id"],
         "level_name": ["name"],
         "elevation": ["above_sea_level"],
         "level_index": ["floor"]
     },
     "path": {
+        "record_id": ["record_id"],
         "trip_id": ["ride"],
         "stop_sequence": ["sequence"],
         "stop_id": ["start_point", "end_point"],
@@ -70,15 +74,18 @@ column_names_map = {
         "traversal_time": []
     },
     "period": {
+        "record_id": ["record_id"],
         "start_date": ["start_date"],
         "end_date": ["end_date"]
     },
     "ride": {
+        "record_id": ["record_id"],
         "route_id": ["route"],
         "service_id": ["period"],
         "trip_headsign": ["headsign"]
     },
     "route": {
+        "record_id": ["record_id"],
         "route_long_name": ["name"],
         "route_short_name": ["short_name"],
         "route_type": ["type"],
@@ -86,12 +93,14 @@ column_names_map = {
         "agency_id": ["agency"]
     },
     "traffic_centre": {
+        "record_id": ["record_id"],
         "stop_name": ["name"],
         "stop_lat": ["latitude"],
         "stop_lon": ["longitude"],
         "location_type": ["location_type"]
     },
     "traffic_point": {
+        "record_id": ["record_id"],
         "stop_name": ["name"],
         "stop_lat": ["latitude"],
         "stop_lon": ["longitude"],
@@ -100,6 +109,7 @@ column_names_map = {
         "level_id": ["height"]
     },
     "weekdays": {
+        "record_id": ["record_id"],
         "monday": ["monday"],
         "tuesday": ["tuesday"],
         "wednesday": ["wednesday"],
@@ -203,7 +213,7 @@ unique_column_map: dict[list[str]] = {
     "period": ["start_date", "end_date", "weekdays"],
     "ride_exception": ["ride", "exception_table"],
     "ride": ["route", "period", "start_time"],
-    "route": ["name", "agency"],
+    "route": ["name", "short_name", "agency"],
     "stop_type": ["type"],
     "traffic_centre": ["name", "latitude", "longitude", "location_type"],
     "traffic_point": ["latitude", "longitude"],

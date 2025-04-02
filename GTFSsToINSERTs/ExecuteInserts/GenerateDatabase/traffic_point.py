@@ -1,63 +1,123 @@
-from data_storage import DataTable 
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_traffic_point_database_table(stops_gtfs_table, traffic_centre_database_table, location_type_database_table, height_database_table):
-    """
-    Generiert die Datenbank-Tabelle 'traffic_point' aus der GTFS-Tabelle 'stops' und setzt die Referenzen auf die Tabellen 'traffic_centre', 'location_type' und 'height'.
+def clear_traffic_point_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
     
-    :param stops_gtfs_table: Die GTFS-Tabelle 'stops'
-    :param traffic_centre_database_table: Die Datenbank-Tabelle 'traffic_centre'
-    :param location_type_database_table: Die Datenbank-Tabelle 'location_type'
-    :param height_database_table: Die Datenbank-Tabelle 'height'
-    :return: Ein DataTable-Objekt für die Tabelle 'traffic_point'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
-    """
-    # Erhalte die Spalten der GTFS-Tabelle 'stops'
-    gtfs_table_columns = stops_gtfs_table.get_columns()
+    old_table_name = "stops"
+    new_table_name = "traffic_point"
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle 'traffic_point'
-    new_and_used_columns = append_new_columns_and_get_used("traffic_point", gtfs_table_columns)
+    # Erhalte die Spalten der Tabelle 'stops' aus der Datenbank
+    old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
+    # Konvertiere die Spalten in eine Liste von Strings
+    old_table_columns = [column[1] for column in old_table_columns]
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
+    table_edit_sql = []
+    # Ändere den Namen der Tabelle 'stops' in 'traffic_point'
+    table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
-    # Überprüfe, ob die Spalten 'parent_station' und 'level_id' vorhanden sind
-    traffic_centre_found = "parent_station" in gtfs_table_columns
-    height_found = "level_id" in gtfs_table_columns
+    for column in old_table_columns:
+        if column not in column_names_map[new_table_name]:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} DROP COLUMN {column};")
+        elif column_names_map[new_table_name][column][0] != column:
+            table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN {column} TO {column_names_map[new_table_name][column][0]};")
+    for sql in table_edit_sql:
+        cache_db.execute(sql)
+    cache_db.commit()
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'traffic_point'
-    traffic_point_database_table = DataTable("traffic_point", database_table_columns)
+    if "parent_station" in old_table_columns:
+        
+        # Suche nach Einträgen in der Tabelle 'traffic_point', die als 'traffic_centre' einen 'traffic_point' haben,
+        # welcher wiederum eine Referenz auf eine 'traffic_centre' hat und löse diese auf
+        select_traffic_point_references_in_traffic_centre_sql = f"""
+            SELECT DISTINCT s2.traffic_centre, s1.record_id 
+            FROM {new_table_name} s1
+            JOIN {new_table_name} s2 ON s1.traffic_centre = s2.record_id
+            WHERE s2.traffic_centre != s1.record_id
+            LIMIT {batch_size} OFFSET ?
+        """
+        # Erstelle das Update-Statement, um die Daten in die neue Tabelle 'traffic_point' zu übertragen
+        update_traffic_point_sql = f"UPDATE {new_table_name} SET traffic_centre = :1 WHERE record_id = :2"
 
-    # Füge die Datensätze der GTFS-Tabelle 'stops' in die Datenbanktabelle ein
-    traffic_point_database_table.set_all_values(
-        stops_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
+        offset = 0
+        while True:
+            if stop_thread_var.get(): return
 
-    # Setze die Referenzen auf die Tabelle 'traffic_centre'
-    if traffic_centre_found:
-        traffic_centre_id_map = traffic_centre_database_table.get_distinct_values_of_all_records(["id"])
-        for record_id, traffic_centre_id in traffic_point_database_table.get_distinct_values_of_all_records(["traffic_centre"]).items():
-            if traffic_centre_id[0] == "":
-                continue
-            traffic_centre_new_id = traffic_centre_id_map[traffic_centre_id[0]][0]
-            traffic_point_database_table.set_value(record_id, "traffic_centre", traffic_centre_new_id)
+            # Hole die Kombinationen aus record_ids und traffic_centre aus der traffic_point-Tabelle
+            traffic_point_references = cache_db.execute(select_traffic_point_references_in_traffic_centre_sql, (offset,)).fetchall()
+            # Wenn keine weiteren Einträge gefunden wurden, breche die Schleife ab
+            if len(traffic_point_references) == 0:
+                break
+            # Wandle die Kombinationen in eine Liste von Tupeln um [(traffic_centre, record_id)]
+            traffic_point_references = [(str(traffic_centre), record_id) for traffic_centre, record_id in traffic_point_references]
+            # Führe das Update-Statement aus
+            cache_db.executemany(update_traffic_point_sql, traffic_point_references)
+            # committe die Änderungen
+            cache_db.commit()
+            # Erhöhe den Offset um die Anzahl der gefundenen Einträge
+            offset += len(traffic_point_references)
 
-    # Setze die Referenzen auf die Tabelle 'height'
-    if height_found:
-        height_id_map = height_database_table.get_distinct_values_of_all_records(["id"])
-        for record_id, height_id in traffic_point_database_table.get_distinct_values_of_all_records(["height"]).items():
-            if height_id[0] == "":
-                continue
-            height_new_id = height_id_map[height_id[0]][0]
-            traffic_point_database_table.set_value(record_id, "height", height_new_id)
+        # Ersetze die 'parent_station' in der Spalte 'traffic_centre' in der cache-DB durch die neu generierte ID der 'traffic_centre'-Tabelle
+        select_ids_sql = f"SELECT id, record_id FROM traffic_centre LIMIT {batch_size} OFFSET ?"
+        # Erstelle dazu eine neue Spalte, um die IDs zu speichern und Referenzen auf parent_stations, die nicht als traffic_centre 
+        # erkannt wurden, zu löschen
+        cache_db.execute(f"ALTER TABLE {new_table_name} RENAME COLUMN trafffic_centre TO parent_station;")
+        cache_db.commit()
+        # Füge die neue Spalte 'traffic_centre' hinzu, um die IDs zu speichern
+        cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN traffic_centre TEXT;")
+        cache_db.commit()
+        update_id_sql = f"UPDATE {new_table_name} SET traffic_centre = :1 WHERE parent_station = :2"
 
-    # Ersetze den Typ aus dem GTFS-File durch die neu generierte ID des 'location_type'
-    location_type_id_map = location_type_database_table.get_distinct_values_of_all_records(["id"])
-    for record_id, location_type in traffic_centre_database_table.get_distinct_values_of_all_records(["location_type"]).items():
-        if location_type[0] == "":
-            continue
-        location_type_new_id = location_type_id_map[str(location_type[0])][0]
-        traffic_centre_database_table.set_value(record_id, "location_type", location_type_new_id)
+        total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM traffic_centre").fetchone()[0]
 
-    return traffic_point_database_table
+        for i in range(0, total_update_conditions, batch_size):
+            if stop_thread_var.get(): return
+
+            # Hole die Kombinationen aus ids und record_ids aus der traffic_centre-Tabelle
+            traffic_centre_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+            # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+            traffic_centre_ids = [(str(id), record_id) for id, record_id in traffic_centre_ids]
+            # Führe das Update-Statement aus
+            cache_db.executemany(update_id_sql, traffic_centre_ids)
+            # committe die Änderungen
+            cache_db.commit()
+
+        # Lösche die Spalte 'parent_station' aus der Tabelle 'traffic_point', da sie nicht mehr benötigt wird
+        cache_db.execute(f"ALTER TABLE {new_table_name} DROP COLUMN parent_station;")
+
+    if "level_id" in old_table_columns:
+        # Ersetze die 'height' in der Spalte 'height' in der cache-DB durch die neu generierte ID der 'height'-Tabelle
+        select_ids_sql = f"SELECT id, record_id FROM height LIMIT {batch_size} OFFSET ?"
+        update_id_sql = f"UPDATE {new_table_name} SET height = :1 WHERE height = :2"
+
+        total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM height").fetchone()[0]
+
+        for i in range(0, total_update_conditions, batch_size):
+            if stop_thread_var.get(): return
+
+            # Hole die Kombinationen aus ids und record_ids aus der height-Tabelle
+            height_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+            # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+            height_ids = [(str(id), record_id) for id, record_id in height_ids]
+            # Führe das Update-Statement aus
+            cache_db.executemany(update_id_sql, height_ids)
+            # committe die Änderungen
+            cache_db.commit()
+
+    # Ersetze die 'location_type' in der Spalte 'location_type' in der cache-DB durch die neu generierte ID der 'location_type'-Tabelle
+    select_ids_sql = f"SELECT id, record_id FROM location_type LIMIT {batch_size} OFFSET ?"
+    update_id_sql = f"UPDATE {new_table_name} SET location_type = :1 WHERE location_type = :2"
+
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM location_type").fetchone()[0]
+
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der location_type-Tabelle
+        location_type_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        location_type_ids = [(str(id), record_id) for id, record_id in location_type_ids]
+        # Führe das Update-Statement aus
+        cache_db.executemany(update_id_sql, location_type_ids)
+        # committe die Änderungen
+        cache_db.commit()

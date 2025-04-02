@@ -1,54 +1,57 @@
-from data_storage import DataTable
+import sqlite3
+from preset_values import column_names_map
 
-def generate_ride_exception_database_table(exception_table_database_table, ride_database_table, trips_gtfs_table, calendar_dates_gtfs_table):
+def create_new_ride_exception_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
+    new_table_name = "ride_exception"
+
+    # Erstelle eine neue Tabelle 'ride_exception' in der Datenbank
+    create_ride_exception_table_sql = f"""
+    CREATE TABLE IF NOT EXISTS {new_table_name} (
+        record_id TEXT PRIMARY KEY,
+        ride TEXT,
+        exception_table TEXT
+    );
     """
-    Generiert die Datenbank-Tabelle 'ride_exception' aus den GTFS-Tabellen 'trips' und 'calendar_dates' sowie den Datenbank-Tabellen 'exception_table' und 'ride'.
+    cache_db.execute(create_ride_exception_table_sql)
+    cache_db.commit()
+
+    # Füge die 'id' in 'ride' und die 'id' in 'exception_table' als 'ride' und 'exception_table' in die neue Tabelle 
+    # 'ride_exception' ein, wo die 'service_id' in der Tabelle 'ride' und 'exception_table' übereinstimmt
+    # generiere die record_id für die neue Tabelle 'ride_exception' aus der Kombination der 'id' in 'ride' 
+    # und der 'id' in 'exception_table'
+    select_ids_sql = f"""
+    SELECT rd.id, et.id FROM ride AS rd 
+    JOIN exception_table AS et ON rd.service_id = et.service_id
+    LIMIT {batch_size} OFFSET ?
+    """
+    insert_sql = f"INSERT INTO {new_table_name} (record_id, ride, exception_table) VALUES (?, ?, ?)"
     
-    :param exception_table_database_table: Die Datenbank-Tabelle 'exception_table'
-    :param ride_database_table: Die Datenbank-Tabelle 'ride'
-    :param trips_gtfs_table: Die GTFS-Tabelle 'trips'
-    :param calendar_dates_gtfs_table: Die GTFS-Tabelle 'calendar_dates'
-    :return: Ein DataTable-Objekt für die Tabelle 'ride_exception'
-    :raises KeyError: Wenn eine erforderliche Spalte nicht gefunden wird
-    :raises ValueError: Wenn die Daten nicht korrekt verarbeitet werden können
+    offset = 0
+    while True:
+        if stop_thread_var.get(): return
+
+        # Hole die Kombinationen aus ids und record_ids aus der ride- und exception_table-Tabelle
+        ride_exception_ids = cache_db.execute(select_ids_sql, (offset,)).fetchall()
+        if not ride_exception_ids:
+            break
+
+        # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
+        ride_exception_ids = [(str(ride_id) + str(exception_table_id), ride_id, exception_table_id) 
+                              for ride_id, exception_table_id in ride_exception_ids]
+
+        # Füge die Daten in die neue Tabelle 'ride_exception' ein
+        cache_db.executemany(insert_sql, ride_exception_ids)
+
+        # committe die Änderungen
+        cache_db.commit()
+
+        offset += batch_size
+
+    
+    # Lösche die beiden Spalten 'service_id' in der Tabelle 'ride' und 'exception_table'
+    delete_sql = f"""
+    ALTER TABLE ride DROP COLUMN service_id;
+    ALTER TABLE exception_table DROP COLUMN service_id;
     """
-    # Erstelle ein DataTable-Objekt für die Tabelle 'ride_exception'
-    ride_exception_database_table = DataTable("ride_exception", ["ride", "exception_table"])
-
-    # Erhalte die eindeutigen Werte der Spalte 'service_id' aus der GTFS-Tabelle 'calendar_dates'
-    service_date_id_service_id_map = calendar_dates_gtfs_table.get_distinct_values_of_all_records(["service_id"])
-    service_date_id_exception_table_id_map = exception_table_database_table.get_distinct_values_of_all_records(["id"])
-    trip_id_ride_id_map = ride_database_table.get_distinct_values_of_all_records(["id"])
-    trip_id_service_id_map = trips_gtfs_table.get_distinct_values_of_all_records(["service_id"])
-
-    # Erstelle eine Map von 'service_id' zu 'ride_ids'
-    service_id_ride_ids_map = {}
-    for trip_id, service_id in trip_id_service_id_map.items():
-        if service_id[0] not in service_id_ride_ids_map:
-            service_id_ride_ids_map[service_id[0]] = []
-        ride_id = trip_id_ride_id_map[trip_id][0]
-        if ride_id not in service_id_ride_ids_map[service_id[0]]:
-            service_id_ride_ids_map[service_id[0]].append(ride_id)
-
-    # Erstelle eine Map von 'service_id' zu 'exception_table_ids'
-    service_id_exception_table_ids_map = {}
-    for service_date_id, service_id in service_date_id_service_id_map.items():
-        if service_id[0] not in service_id_exception_table_ids_map:
-            service_id_exception_table_ids_map[service_id[0]] = []
-        exception_table_id = service_date_id_exception_table_id_map[service_date_id][0]
-        if exception_table_id not in service_id_exception_table_ids_map[service_id[0]]:
-            service_id_exception_table_ids_map[service_id[0]].append(exception_table_id)
-
-    exception_table_data = {}
-
-    # Verknüpfe 'ride_ids' mit 'exception_table_ids' basierend auf 'service_id'
-    for service_id, exception_table_ids in service_id_exception_table_ids_map.items():
-        for ride_id in service_id_ride_ids_map[service_id]:
-            for exception_table_id in exception_table_ids:
-                ride_exception_id = ride_id + exception_table_id
-                exception_table_data[ride_exception_id] = [ride_id, exception_table_id]
-
-    # Setze alle Werte in die Datenbanktabelle 'ride_exception'
-    ride_exception_database_table.set_all_values(exception_table_data)
-
-    return ride_exception_database_table
+    cache_db.executescript(delete_sql)
+    cache_db.commit()

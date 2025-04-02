@@ -1,28 +1,48 @@
-from data_storage import DataTable
-from ExecuteInserts.core import append_new_columns_and_get_used
+import sqlite3
+from preset_values import column_names_map
 
-def generate_weekdays_database_table(calendar_gtfs_table):
+def create_new_weekdays_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_thread_var)-> None:
+    old_table_name = "calendar"
+    new_table_name = "weekdays"
+
+    # Erstelle eine neue Tabelle 'weekdays' in der Datenbank
+    create_weekdays_table_sql = f"""
+    CREATE TABLE IF NOT EXISTS {new_table_name} (
+        record_id TEXT PRIMARY KEY,
+        monday TEXT,
+        tuesday TEXT,
+        wednesday TEXT,
+        thursday TEXT,
+        friday TEXT,
+        saturday TEXT,
+        sunday TEXT
+    );
     """
-    Extrahiert die Wochentag-Kombinationen aus der GTFS-Tabelle 'calendar' und bildet sie auf die Datenbank-Tabelle 'weekdays' ab.
-    
-    :param calendar_gtfs_table: Die GTFS-Tabelle 'calendar'
-    :return: Ein DataTable-Objekt für die Tabelle 'weekdays'
-    """
-    # Erhalte die Spalten der GTFS-Tabelle
-    gtfs_table_columns = calendar_gtfs_table.get_columns()
+    cache_db.execute(create_weekdays_table_sql)
+    cache_db.commit()
 
-    # Bestimme neue und verwendete Spalten für die Datenbanktabelle
-    new_and_used_columns = append_new_columns_and_get_used("weekdays", gtfs_table_columns)
+    # Erstelle eine Liste von Spalten, die in der neuen Tabelle 'weekdays' verwendet werden sollen
+    new_table_columns = list(column_names_map[new_table_name].keys())
 
-    database_table_columns = new_and_used_columns["new_columns"]
-    used_columns = new_and_used_columns["used_columns"]
+    # Erstelle das Select-Statement, um die Daten aus der alten Tabelle 'calendar' zu holen
+    select_sql = f"SELECT {', '.join(new_table_columns)} FROM {old_table_name} LIMIT {batch_size} OFFSET ?"
 
-    # Erstelle ein DataTable-Objekt für die Tabelle 'weekdays'
-    weekdays_database_table = DataTable("weekdays", database_table_columns)
+    # Erstelle das Insert-Statement, um die Daten in die neue Tabelle 'weekdays' zu übertragen
+    insert_sql = f"INSERT INTO {new_table_name} ({', '.join(new_table_columns)}) VALUES ({', '.join(['?'] * len(new_table_columns))})"
 
-    # Füge die Datensätze der GTFS-Tabelle in die Datenbanktabelle ein
-    weekdays_database_table.set_all_values(
-        calendar_gtfs_table.get_distinct_values_of_all_records(used_columns)
-    )
+    # Hole die Anzahl der Zeilen in der alten Tabelle 'calendar'
+    total_rows = cache_db.execute(f"SELECT COUNT(*) FROM {old_table_name}").fetchone()[0]
 
-    return weekdays_database_table
+    # Iteriere über die Zeilen in der alten Tabelle 'calendar' und füge sie in die neue Tabelle 'weekdays' ein
+    for i in range(0, total_rows, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die Daten aus der alten Tabelle 'calendar' -> Ergebnis ist eine Liste von Tupeln
+        # [(record_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday)]
+        rows = cache_db.execute(select_sql, (i,)).fetchall()
+
+        # Füge die Daten in die neue Tabelle 'weekdays' ein
+        cache_db.executemany(insert_sql, rows)
+
+        # committe die Änderungen
+        cache_db.commit()
