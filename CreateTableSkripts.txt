@@ -135,8 +135,8 @@ CREATE TABLE traffic_centre (
                                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                                 name VARCHAR2(100),
                                 location_type NUMBER NOT NULL,
-                                latitude NUMBER(20, 15),
-                                longitude NUMBER(20, 15),
+                                latitude NUMBER(20, 15) NOT NULL,
+                                longitude NUMBER(20, 15) NOT NULL,
                                 CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
                                 CONSTRAINT fk_traffic_centre_type FOREIGN KEY (location_type) REFERENCES location_type(id)
 );
@@ -144,8 +144,8 @@ CREATE TABLE traffic_point (
                                id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                                name VARCHAR2(100),
                                location_type NUMBER,
-                               latitude NUMBER(20, 15),
-                               longitude NUMBER(20, 15),
+                               latitude NUMBER(20, 15) NOT NULL,
+                               longitude NUMBER(20, 15) NOT NULL,
                                height NUMBER,
                                traffic_centre NUMBER,
                                CONSTRAINT unique_latitude_and_longitude UNIQUE (latitude, longitude),

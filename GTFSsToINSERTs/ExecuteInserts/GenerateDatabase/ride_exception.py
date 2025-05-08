@@ -2,6 +2,9 @@ import sqlite3
 from preset_values import column_names_map
 
 def create_new_ride_exception_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, stop_thread_var) -> None:
+
+    # TODO: WICHTIG: Spalte 'exception_type' Kann auch eine positive Ausnahme sein -> doch relevant
+
     new_table_name = "ride_exception"
 
     # Erstelle eine neue Tabelle 'ride_exception' in der Datenbank
