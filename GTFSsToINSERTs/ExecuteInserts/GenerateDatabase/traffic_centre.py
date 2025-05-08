@@ -35,7 +35,7 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
 
     # Überprüfe, ob die Spalte 'parent_station' vorhanden ist
     if "parent_station" not in old_table_columns:
-        print(f"\rEs wurden keine Verknüpfungen zu zentralen Verkehrsknotenpunkten gefunden", file=sys.stderr)
+        print(f"\rEs wurden keine Verknüpfungen zu zentralen Verkehrsknotenpunkten gefunden")
         
         return
 
@@ -62,7 +62,7 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
     """
 
 
-    print(f"\r Suche nach zentralen Verkehrsknotenpunkten in der Tabelle '{old_table_name}' - Dies kann einige Minuten dauern", file=sys.stderr)
+    print(f"\r Suche nach zentralen Verkehrsknotenpunkten in der Tabelle '{old_table_name}' - Dies kann einige Minuten dauern")
 
     if stop_thread_var.get(): return
 
@@ -71,7 +71,7 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
     rows = cache_db.execute(select_sql).fetchall()
 
     if rows:
-        print(f"\r Breakpoint: {len(rows)} zentrale Verkehrsknotenpunkte gefunden", file=sys.stderr)
+        print(f"\r Breakpoint: {len(rows)} zentrale Verkehrsknotenpunkte gefunden")
 
         # Füge die Datensätze in die neue Tabelle 'traffic_centre' ein
         cache_db.executemany(insert_sql, rows)
@@ -85,16 +85,16 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
         # committe die Änderungen
         cache_db.commit()
 
-    print(f"\r Suche nach zentralen Verkehrsknotenpunkten in der Tabelle '{old_table_name}' abgeschlossen", file=sys.stderr)
+    print(f"\r Suche nach zentralen Verkehrsknotenpunkten in der Tabelle '{old_table_name}' abgeschlossen")
 
     # Ersetze den 'location_type' in der Spalte 'location_type' in der cache-DB durch die neu generierte ID der 'location_type'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM location_type LIMIT {batch_size} OFFSET ?"
 
-    update_id_sql = f"UPDATE {new_table_name} SET location_type = :1 WHERE location_type = :2"
+    update_id_sql = f"UPDATE {new_table_name} SET location_type_id = :1 WHERE location_type_id = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM location_type").fetchone()[0]
 
-    print(f"\r Updaten der Fremdschlüssel in der Tabelle '{new_table_name}'", file=sys.stderr)
+    print(f"\r Updaten der Fremdschlüssel in der Tabelle '{new_table_name}'")
 
     cache_db.execute("PRAGMA synchronous = OFF")
     cache_db.execute("PRAGMA journal_mode = MEMORY")

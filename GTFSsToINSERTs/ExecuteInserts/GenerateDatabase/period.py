@@ -15,7 +15,7 @@ def clear_period_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_t
     # Ändere den Namen der Tabelle 'calendar' in 'period'
     table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
     # Füge die Spalte 'weekdays' hinzu
-    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN weekdays TEXT;")
+    table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN weekdays_id TEXT;")
 
     for column in old_table_columns:
         if column not in column_names_map[new_table_name]:
@@ -31,7 +31,7 @@ def clear_period_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_t
     # Ersetze die 'weekdays' in der Spalte 'weekdays' in der cache-DB durch die neu generierte ID der 'weekdays'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM weekdays LIMIT {batch_size} OFFSET ?"
 
-    update_id_sql = f"UPDATE {new_table_name} SET weekdays = :1 WHERE record_id = :2"
+    update_id_sql = f"UPDATE {new_table_name} SET weekdays_id = :1 WHERE record_id = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM weekdays").fetchone()[0]
 

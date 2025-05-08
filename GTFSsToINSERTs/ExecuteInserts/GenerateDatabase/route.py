@@ -28,10 +28,10 @@ def clear_route_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_th
     cache_db.commit()
 
 
-    # Ersetze die 'agency_id' in der Spalte 'agency' in der cache-DB durch die neu generierte ID der 'agency'-Tabelle
+    # Ersetze die 'agency_id' in der Spalte 'agency_id' in der cache-DB durch die neu generierte ID der 'agency'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM agency LIMIT {batch_size} OFFSET ?"
 
-    update_id_sql = f"UPDATE {new_table_name} SET agency = :1 WHERE agency = :2"
+    update_id_sql = f"UPDATE {new_table_name} SET agency_id = :1 WHERE agency_id = :2"
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM agency").fetchone()[0]
 

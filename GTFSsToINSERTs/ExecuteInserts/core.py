@@ -212,4 +212,4 @@ def show_progress(current, total, start_time, message):
     remaining_minutes = int(estimated_remaining_time // 60)
     remaining_seconds = int(estimated_remaining_time % 60)
     print(f"\r{message} Fortschritt: **{progress_percent}%** | "
-            f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**", end="")
+            f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**")

@@ -1,9 +1,9 @@
 import sqlite3
 from preset_values import column_names_map
 
-def clear_exception_table_cache_db_table(cache_db: sqlite3.Connection) -> None:
+def clear_deviation_cache_db_table(cache_db: sqlite3.Connection) -> None:
     old_table_name = "calendar_dates"
-    new_table_name = "exception_table"
+    new_table_name = "deviation"
 
     # Erhalte die Spalten der Tabelle 'calendar_dates' aus der Datenbank
     old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
@@ -12,7 +12,7 @@ def clear_exception_table_cache_db_table(cache_db: sqlite3.Connection) -> None:
 
     # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
     table_edit_sql = []
-    # Ändere den Namen der Tabelle 'calendar_dates' in 'exception_table'
+    # Ändere den Namen der Tabelle 'calendar_dates' in 'deviation'
     table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
     for column in old_table_columns:

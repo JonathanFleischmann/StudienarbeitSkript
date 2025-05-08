@@ -23,7 +23,8 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
         # hole die Spalten der Tabelle ohne die Spalte 'record_id'
         
         columns_to_insert = cache_db_conn.execute(f"PRAGMA table_info({table_name});").fetchall()
-        columns_to_insert = [column[1] for column in columns_to_insert if column[1] != "record_id"]
+        columns_to_insert = [column[1] for column in columns_to_insert if column[1] != "record_id" and column[1] != "id"
+                             and column[1] != "trip_headsign" and column[1] != "service_id"]
 
 
         # Zähle die Anzahl der Inserts anhand der Anzahl der Zeilen in der cache-Tabelle
@@ -110,7 +111,7 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
             remaining_seconds = int(estimated_remaining_time % 60)
 
             print(f"\r  Fortschritt: **{progress_percent}%** | "
-                  f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**", end="")
+                  f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**")
             
             # Nach jedem Batch committen
             oracle_db_conn.commit()
@@ -290,7 +291,7 @@ def select_generated_ids(table_name, cache_db_conn: sqlite3.Connection, oracle_d
                 remaining_seconds = int(estimated_remaining_time % 60)
 
                 print(f"\r\tFortschritt: **{progress_percent}%** | "
-                      f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**", end="")
+                      f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**")
 
             log.write(f"\n✅ {done_count} IDs erfolgreich ermittelt.\n")
             print(f"\r\t✅ {done_count} IDs für Tabelle **{table_name}** erfolgreich ermittelt.\n")
