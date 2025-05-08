@@ -47,43 +47,44 @@ COMMIT;
 
 
 CREATE TABLE agency (
-                        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                        name VARCHAR2(100) UNIQUE NOT NULL,
-                        url VARCHAR2(100),
-                        language VARCHAR2(50)
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR2(100) UNIQUE NOT NULL,
+    url VARCHAR2(100)
 );
 
 CREATE TABLE route (
-                       id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                       name VARCHAR2(200) NOT NULL,
-                       short_name VARCHAR2(10) NOT NULL,
-                       type VARCHAR2(50),
-                       description VARCHAR2(400),
-                       agency NUMBER NOT NULL,
-                       CONSTRAINT unique_name_short_name_and_agency_in_route UNIQUE (name, short_name, agency),
-                       CONSTRAINT fk_agency FOREIGN KEY (agency) REFERENCES agency(id) ON DELETE CASCADE
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR2(200) NOT NULL,
+    short_name VARCHAR2(10) NOT NULL,
+    type VARCHAR2(50),
+    description VARCHAR2(400),
+    agency_id NUMBER NOT NULL,
+    CONSTRAINT unique_route UNIQUE (name, short_name, agency_id),
+    CONSTRAINT fk_agency FOREIGN KEY (agency_id) REFERENCES agency(id) ON DELETE CASCADE
 );
 
 CREATE TABLE weekdays (
-                          id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                          monday NUMBER(1) NOT NULL CHECK (monday IN (0, 1)),
-                          tuesday NUMBER(1) NOT NULL CHECK (tuesday IN (0, 1)),
-                          wednesday NUMBER(1) NOT NULL CHECK (wednesday IN (0, 1)),
-                          thursday NUMBER(1) NOT NULL CHECK (thursday IN (0, 1)),
-                          friday NUMBER(1) NOT NULL CHECK (friday IN (0, 1)),
-                          saturday NUMBER(1) NOT NULL CHECK (saturday IN (0, 1)),
-                          sunday NUMBER(1) NOT NULL CHECK (sunday IN (0, 1)),
-                       	  CONSTRAINT unique_weekdays UNIQUE (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    monday NUMBER(1) NOT NULL CHECK (monday IN (0, 1)),
+    tuesday NUMBER(1) NOT NULL CHECK (tuesday IN (0, 1)),
+    wednesday NUMBER(1) NOT NULL CHECK (wednesday IN (0, 1)),
+    thursday NUMBER(1) NOT NULL CHECK (thursday IN (0, 1)),
+    friday NUMBER(1) NOT NULL CHECK (friday IN (0, 1)),
+    saturday NUMBER(1) NOT NULL CHECK (saturday IN (0, 1)),
+    sunday NUMBER(1) NOT NULL CHECK (sunday IN (0, 1)),
+    CONSTRAINT unique_weekdays UNIQUE (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
 );
+
 CREATE TABLE period (
-                        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                        start_date DATE NOT NULL,
-                        end_date DATE NOT NULL,
-                        weekdays NUMBER NOT NULL,
-                       	CONSTRAINT unique_period UNIQUE (start_date, end_date, weekdays),
-                        CONSTRAINT fk_weekdays FOREIGN KEY (weekdays) REFERENCES weekdays(id) ON DELETE CASCADE,
-                        CONSTRAINT check_dates CHECK (start_date <= end_date)
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    weekdays_id NUMBER NOT NULL,
+    CONSTRAINT unique_period UNIQUE (start_date, end_date, weekdays_id),
+    CONSTRAINT fk_weekdays FOREIGN KEY (weekdays_id) REFERENCES weekdays(id) ON DELETE CASCADE,
+    CONSTRAINT check_dates CHECK (start_date <= end_date)
 );
+
 CREATE OR REPLACE TRIGGER period_ensure_date_with_default_time
     BEFORE INSERT OR UPDATE ON period
     FOR EACH ROW
@@ -91,125 +92,112 @@ BEGIN
     :NEW.start_date := TRUNC(:NEW.start_date);
     :NEW.end_date := TRUNC(:NEW.end_date);
 END;
-CREATE TABLE ride (
-                      id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                      route NUMBER NOT NULL,
-                      period NUMBER NOT NULL,
-		      headsign VARCHAR2(200),
-		      start_time TIMESTAMP NOT NULL,
-                      CONSTRAINT unique_ride UNIQUE (route, period, start_time),
-                      CONSTRAINT fk_route FOREIGN KEY (route) REFERENCES route(id) ON DELETE CASCADE,
-                      CONSTRAINT fk_period FOREIGN KEY (period) REFERENCES period(id) ON DELETE CASCADE
+-- nur das Datum ist bei den Spalten relevant, die Uhrzeit wird auf den default-Wert gesetzt
+
+CREATE TABLE trip (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    route_id NUMBER NOT NULL,
+    period_id NUMBER NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    CONSTRAINT unique_trip UNIQUE (route_id, period_id, start_time),
+    CONSTRAINT fk_route FOREIGN KEY (route_id) REFERENCES route(id) ON DELETE CASCADE,
+    CONSTRAINT fk_period FOREIGN KEY (period_id) REFERENCES period(id) ON DELETE CASCADE
 );
 -- nur die Uhrzeit ist bei den Spalten relevant, das Datum wird auf den 01.01.1970 gesetzt
 
-CREATE TABLE exception_table (
-                                 id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                                 exception_date DATE UNIQUE NOT NULL
+CREATE TABLE deviation (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    deviation_date DATE UNIQUE NOT NULL
 );
-CREATE OR REPLACE TRIGGER exception_table_ensure_date_with_default_time
+
+CREATE OR REPLACE TRIGGER deviation_ensure_date_with_default_time
     BEFORE INSERT OR UPDATE ON exception_table
     FOR EACH ROW
 BEGIN
     :NEW.exception_date := TRUNC(:NEW.exception_date);
 END;
-CREATE TABLE ride_exception (
-                                ride NUMBER NOT NULL,
-                                exception_table NUMBER NOT NULL,                                
-				CONSTRAINT pk_ride_and_exception PRIMARY KEY (ride, exception_table),
-                                CONSTRAINT fk_ride FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
-                                CONSTRAINT fk_exception FOREIGN KEY (exception_table) REFERENCES exception_table(id) ON DELETE CASCADE
+-- nur das Datum ist bei den Spalten relevant, die Uhrzeit wird auf den default-Wert gesetzt
+
+CREATE TABLE trip_deviation (
+    trip_id NUMBER NOT NULL,
+    deviation_id NUMBER NOT NULL,                                
+    CONSTRAINT pk_trip_deviation PRIMARY KEY (trip_id, deviation_id),
+    CONSTRAINT fk_trip_in_trip_deviation FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE,
+    CONSTRAINT fk_deviation FOREIGN KEY (deviation_id) REFERENCES deviation(id) ON DELETE CASCADE
 );
+
 CREATE TABLE location_type (
-                               id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                               type VARCHAR2(50) UNIQUE NOT NULL
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type VARCHAR2(50) UNIQUE NOT NULL
 );
-CREATE TABLE height (
-                        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                        name VARCHAR2(100),
-                        above_sea_level NUMBER NOT NULL,
-                        floor NUMBER,
-                        CONSTRAINT unique_name_sea_level_and_floor UNIQUE (name, above_sea_level, floor)
-);
+
 CREATE TABLE traffic_centre (
-                                id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                                name VARCHAR2(100),
-                                location_type NUMBER NOT NULL,
-                                latitude NUMBER(20, 15) NOT NULL,
-                                longitude NUMBER(20, 15) NOT NULL,
-                                CONSTRAINT unique_name_latitude_and_longitude UNIQUE (name, latitude, longitude),
-                                CONSTRAINT fk_traffic_centre_type FOREIGN KEY (location_type) REFERENCES location_type(id)
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR2(100),
+    location_type_id NUMBER NOT NULL,
+    latitude NUMBER(20, 15) NOT NULL,
+    longitude NUMBER(20, 15) NOT NULL,
+    CONSTRAINT unique_traffic_centre UNIQUE (latitude, longitude),
+    CONSTRAINT fk_location_type_in_traffic_centre FOREIGN KEY (location_type_id) REFERENCES location_type(id)
 );
+
 CREATE TABLE traffic_point (
-                               id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                               name VARCHAR2(100),
-                               location_type NUMBER,
-                               latitude NUMBER(20, 15) NOT NULL,
-                               longitude NUMBER(20, 15) NOT NULL,
-                               height NUMBER,
-                               traffic_centre NUMBER,
-                               CONSTRAINT unique_latitude_and_longitude UNIQUE (latitude, longitude),
-                               CONSTRAINT fk_location_type FOREIGN KEY (location_type) REFERENCES location_type(id),
-                               CONSTRAINT fk_height FOREIGN KEY (height) REFERENCES height(id),
-                               CONSTRAINT fk_traffic_centre FOREIGN KEY (traffic_centre) REFERENCES traffic_centre(id) ON DELETE CASCADE
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR2(100),
+    location_type_id NUMBER,
+    latitude NUMBER(20, 15) NOT NULL,
+    longitude NUMBER(20, 15) NOT NULL,
+    traffic_centre_id NUMBER,
+    CONSTRAINT unique_traffic_point UNIQUE (latitude, longitude),
+    CONSTRAINT fk_location_type_in_traffic_point FOREIGN KEY (location_type_id) REFERENCES location_type(id),
+    CONSTRAINT fk_traffic_centre FOREIGN KEY (traffic_centre_id) REFERENCES traffic_centre(id) ON DELETE CASCADE
 );
+
 CREATE TABLE walk_type (
-                           id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                           type VARCHAR2(50) UNIQUE NOT NULL
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type VARCHAR2(50) UNIQUE NOT NULL
 );
+
 CREATE TABLE stop_type (
-                           id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                           type VARCHAR2(50) UNIQUE NOT NULL
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    type VARCHAR2(50) UNIQUE NOT NULL
 );
-CREATE TABLE path (
-                      id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                      min_travel_time NUMBER,
-                      is_ride NUMBER(1) NOT NULL CHECK (is_ride IN (0, 1)),
-                      destination VARCHAR2(200),
-                      walk_type NUMBER,
-                      ride NUMBER,
-                      start_point INTEGER NOT NULL,
-                      departure_time TIMESTAMP,
-                      enter_type INTEGER,
-                      end_point INTEGER NOT NULL,
-                      arrival_time TIMESTAMP,
-                      descend_type INTEGER,
-		      sequence INTEGER,
-		      CONSTRAINT unique_path UNIQUE (start_point, end_point, walk_type, ride),
-                      CONSTRAINT fk_walk_type FOREIGN KEY (walk_type) REFERENCES walk_type(id),
-                      CONSTRAINT fk_ride_in_path FOREIGN KEY (ride) REFERENCES ride(id) ON DELETE CASCADE,
-                      CONSTRAINT fk_start_point FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
-                      CONSTRAINT fk_enter_type FOREIGN KEY (enter_type) REFERENCES stop_type(id) ON DELETE CASCADE,
-                      CONSTRAINT fk_end_point FOREIGN KEY (end_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
-                      CONSTRAINT fk_descend_type FOREIGN KEY (descend_type) REFERENCES stop_type(id) ON DELETE CASCADE,
-                      CONSTRAINT check_path_conditions CHECK (
-                          (is_ride = 0 AND walk_type IS NOT NULL AND ride IS NULL AND destination IS NULL) OR
-                          (is_ride = 1 AND walk_type IS NULL AND ride IS NOT NULL)
-                          )
+
+CREATE TABLE segment (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    destination VARCHAR2(200),
+    trip_id NUMBER,
+    start_point INTEGER NOT NULL,
+    departure_time TIMESTAMP NOT NULL,
+    enter_type INTEGER,
+    end_point INTEGER NOT NULL,
+    arrival_time TIMESTAMP NOT NULL,
+    descend_type INTEGER,
+    sequence INTEGER NOT NULL,
+    CONSTRAINT unique_segment UNIQUE (start_point, end_point, trip_id),
+    CONSTRAINT fk_trip_in_segment FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE,
+    CONSTRAINT fk_start_point_in_segment FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
+    CONSTRAINT fk_enter_type FOREIGN KEY (enter_type) REFERENCES stop_type(id) ON DELETE CASCADE,
+    CONSTRAINT fk_end_point_in_segment FOREIGN KEY (end_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
+    CONSTRAINT fk_descend_type FOREIGN KEY (descend_type) REFERENCES stop_type(id) ON DELETE CASCADE
 );
-CREATE OR REPLACE TRIGGER path_ensure_time_with_default_date
-    BEFORE INSERT OR UPDATE ON path
+
+CREATE TABLE walk (
+    id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    min_travel_time NUMBER NOT NULL,
+    walk_type_id NUMBER,
+    start_point INTEGER NOT NULL,
+    end_point INTEGER NOT NULL
+    CONSTRAINT unique_walk UNIQUE (start_point, end_point, walk_type),
+    CONSTRAINT fk_walk_type FOREIGN KEY (walk_type_id) REFERENCES walk_type(id),
+    CONSTRAINT fk_start_point_in_walk FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
+    CONSTRAINT fk_end_point_in_walk FOREIGN KEY (end_point) REFERENCES traffic_point(id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE TRIGGER segment_ensure_time_with_default_date
+    BEFORE INSERT OR UPDATE ON segment
     FOR EACH ROW
 BEGIN
     :NEW.departure_time := TO_TIMESTAMP_TZ('1970-01-01 ' || TO_CHAR(:NEW.departure_time, 'HH24:MI') || ':00 ' || TO_CHAR(:NEW.departure_time, 'TZD'), 'YYYY-MM-DD HH24:MI:SS TZD');
     :NEW.arrival_time := TO_TIMESTAMP_TZ('1970-01-01 ' || TO_CHAR(:NEW.arrival_time, 'HH24:MI') || ':00 ' || TO_CHAR(:NEW.arrival_time, 'TZD'), 'YYYY-MM-DD HH24:MI:SS TZD');
-END;
-CREATE OR REPLACE TRIGGER path_calculate_min_travel_time_if_possible
-    BEFORE INSERT OR UPDATE ON path
-    FOR EACH ROW
-BEGIN
-    IF :NEW.min_travel_time IS NULL AND :NEW.departure_time IS NOT NULL AND :NEW.arrival_time IS NOT NULL THEN
-        DECLARE
-            v_departure_minutes NUMBER;
-            v_arrival_minutes NUMBER;
-        BEGIN
-            v_departure_minutes := EXTRACT(HOUR FROM :NEW.departure_time) * 60 + EXTRACT(MINUTE FROM :NEW.departure_time);
-            v_arrival_minutes := EXTRACT(HOUR FROM :NEW.arrival_time) * 60 + EXTRACT(MINUTE FROM :NEW.arrival_time);
-            IF v_arrival_minutes < v_departure_minutes THEN
-                :NEW.min_travel_time := (1440 - v_departure_minutes) + v_arrival_minutes;
-            ELSE
-                :NEW.min_travel_time := v_arrival_minutes - v_departure_minutes;
-            END IF;
-        END;
-    END IF;
 END;
