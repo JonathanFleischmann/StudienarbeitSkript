@@ -150,8 +150,8 @@ create_table_statements: dict[str,str] = {
             min_travel_time NUMBER NOT NULL,
             walk_type_id NUMBER,
             start_point INTEGER NOT NULL,
-            end_point INTEGER NOT NULL
-            CONSTRAINT unique_walk UNIQUE (start_point, end_point, walk_type),
+            end_point INTEGER NOT NULL,
+            CONSTRAINT unique_walk UNIQUE (start_point, end_point, walk_type_id),
             CONSTRAINT fk_walk_type FOREIGN KEY (walk_type_id) REFERENCES walk_type(id),
             CONSTRAINT fk_start_point_in_walk FOREIGN KEY (start_point) REFERENCES traffic_point(id) ON DELETE CASCADE,
             CONSTRAINT fk_end_point_in_walk FOREIGN KEY (end_point) REFERENCES traffic_point(id) ON DELETE CASCADE
@@ -198,10 +198,10 @@ create_or_replace_trigger_statements: dict[str,str] = {
     "deviation_ensure_date_with_default_time":
         '''
         CREATE OR REPLACE TRIGGER deviation_ensure_date_with_default_time
-            BEFORE INSERT OR UPDATE ON exception_table
+            BEFORE INSERT OR UPDATE ON deviation
             FOR EACH ROW
         BEGIN
-            :NEW.exception_date := TRUNC(:NEW.exception_date);
+            :NEW.deviation_date := TRUNC(:NEW.deviation_date);
         END;
         ''',
     "segment_ensure_time_with_default_date":
@@ -214,7 +214,7 @@ create_or_replace_trigger_statements: dict[str,str] = {
             :NEW.arrival_time := TO_TIMESTAMP_TZ('1970-01-01 ' || TO_CHAR(:NEW.arrival_time, 'HH24:MI') || ':00 ' || TO_CHAR(:NEW.arrival_time, 'TZD'), 'YYYY-MM-DD HH24:MI:SS TZD');
         END;
         ''',
-    "drop_old_triggers":
+    "drop_old_trigger_1":
         '''
         BEGIN
             EXECUTE IMMEDIATE 'DROP TRIGGER exception_table_ensure_date_with_default_time';
@@ -225,6 +225,9 @@ create_or_replace_trigger_statements: dict[str,str] = {
                     RAISE; -- Anderen Fehler erneut auslösen
                 END IF;
         END;
+        ''',
+        "drop_old_trigger_2":
+        '''
         BEGIN
             EXECUTE IMMEDIATE 'DROP TRIGGER path_ensure_time_with_default_date';
         EXCEPTION
@@ -234,6 +237,9 @@ create_or_replace_trigger_statements: dict[str,str] = {
                     RAISE; -- Anderen Fehler erneut auslösen
                 END IF;
         END;
+        ''',
+    "drop_old_triggers_3":
+        '''
         BEGIN
             EXECUTE IMMEDIATE 'DROP TRIGGER path_calculate_min_travel_time_if_possible';
         EXCEPTION
@@ -243,7 +249,7 @@ create_or_replace_trigger_statements: dict[str,str] = {
                     RAISE; -- Anderen Fehler erneut auslösen
                 END IF;
         END;
-        '''
+        ''',
 }
 
 
