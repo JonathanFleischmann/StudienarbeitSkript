@@ -5,6 +5,8 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
 
     # TODO: WICHTIG: Spalte 'exception_type' Kann auch eine positive Ausnahme sein -> doch relevant
 
+    internal_batch_size = batch_size * 20
+
     new_table_name = "trip_deviation"
 
     # Erstelle eine neue Tabelle 'ride_exception' in der Datenbank
@@ -25,22 +27,36 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
     select_ids_sql = f"""
     SELECT trp.id, dev.id FROM trip AS trp 
     JOIN deviation AS dev ON trp.service_id = dev.service_id
-    LIMIT {batch_size} OFFSET ?
+    LIMIT {internal_batch_size} OFFSET ?
     """
     insert_sql = f"INSERT INTO {new_table_name} (record_id, trip_id, deviation_id) VALUES (?, ?, ?)"
     
+    number_of_rows_sql = f"SELECT COUNT(*) FROM trip AS trp JOIN deviation AS dev ON trp.service_id = dev.service_id"
+    number_of_rows = cache_db.execute(number_of_rows_sql).fetchone()[0]
+
     offset = 0
+
+    print(f"Erstelle die Tabelle '{new_table_name}' und füge die Daten ein...")
+
+    id_number = 0
+
     while True:
         if stop_thread_var.get(): return
 
         # Hole die Kombinationen von ids aus der trip- und deviation-Tabelle
         trip_deviation_ids = cache_db.execute(select_ids_sql, (offset,)).fetchall()
+
         if not trip_deviation_ids:
             break
 
         # Wandle die Kombinationen in eine Liste von Tupeln um [(record_id, trip_id, deviation_id)]
-        trip_deviation_ids = [(str(trip_id) + str(deviation_id), trip_id, deviation_id) 
-                              for trip_id, deviation_id in trip_deviation_ids]
+        index = 0
+        for trip_id, deviation_id in trip_deviation_ids:
+            id_number += 1
+            # Erstelle die record_id aus der Kombination der 'id' in 'trip' und der 'id' in 'deviation'
+            record_id = str(id_number)
+            trip_deviation_ids[index] = (record_id, trip_id, deviation_id)
+            index += 1
 
         # Füge die Daten in die neue Tabelle 'ride_exception' ein
         cache_db.executemany(insert_sql, trip_deviation_ids)
@@ -48,7 +64,14 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
         # committe die Änderungen
         cache_db.commit()
 
-        offset += batch_size
+        offset += internal_batch_size
+
+        print(f"\r Fortschritt bei der Erstellung der trip_deviation: {(offset/number_of_rows)*100:.2f}%", end="")
+
+    
+    print("\r\r")
+
+
 
     
     # Lösche die beiden Spalten 'service_id' in der Tabelle 'ride' und 'exception_table'

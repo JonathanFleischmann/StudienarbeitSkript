@@ -6,6 +6,6 @@
         "username": "C##Benutzer",
         "password": "saqvizsanqoxsizRe9"
     },
-    "input_directory": "C:/Users/jonif/Desktop/Studienarbeit/Verkehrsdaten/GTFSDatensaetze/gtfs_j24",
-    "batch_size": 100
+    "input_directory": "C:/Users/jonif/Desktop/Studienarbeit/Verkehrsdaten/GTFSDatensaetze/GTFS-Daten_VGI",
+    "batch_size": 200
 }

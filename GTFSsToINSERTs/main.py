@@ -27,7 +27,7 @@ def _initialize_cache_database() -> sqlite3.Connection:
     # Verbindung zur SQLite-Datenbank herstellen
     conn = sqlite3.connect(db_file)
     conn.commit()
-    print(f"✅ SQLite-Datenbank '{db_file}' wurde erfolgreich zum Zwischenspeichern initialisiert.")
+    print(f"✅ SQLite-Datenbank '{db_file}' wurde erfolgreich zum Zwischenspeichern initialisiert. - Version: {sqlite3.sqlite_version}")
     return conn
 
 def _delete_cache_database(db_conn: sqlite3.Connection):

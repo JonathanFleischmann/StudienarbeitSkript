@@ -103,7 +103,7 @@ def execute_inserts(cache_db, oracle_db_connection, stop_thread_var, batch_size=
 
 
     if stop_thread_var.get(): return
-    create_new_walk_type_cache_db_table()
+    create_new_walk_type_cache_db_table(cache_db)
     if stop_thread_var.get(): return
     do_inserts("walk_type", cache_db, oracle_db_connection, batch_size, stop_thread_var)
     if stop_thread_var.get(): return
@@ -111,7 +111,7 @@ def execute_inserts(cache_db, oracle_db_connection, stop_thread_var, batch_size=
 
 
     if stop_thread_var.get(): return
-    create_new_stop_type_cache_db_table()
+    create_new_stop_type_cache_db_table(cache_db)
     if stop_thread_var.get(): return
     do_inserts("stop_type", cache_db, oracle_db_connection, batch_size, stop_thread_var)
     if stop_thread_var.get(): return

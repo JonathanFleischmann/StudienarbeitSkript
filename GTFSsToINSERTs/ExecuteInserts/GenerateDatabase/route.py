@@ -46,3 +46,14 @@ def clear_route_cache_db_table(cache_db: sqlite3.Connection, batch_size, stop_th
         cache_db.executemany(update_id_sql, agency_ids)
         # committe die Änderungen
         cache_db.commit()
+
+
+    # Jeder Eintrag in der Spalte 'name', der entweder null oder '' ist, wird in 'unbekannt' geändert
+    update_sql = f"UPDATE {new_table_name} SET name = 'unbekannt' WHERE name IS NULL OR name = ''"
+    cache_db.execute(update_sql)
+    cache_db.commit()
+
+    # Jeder Eintrag in der Spalte 'short_name', der entweder null oder '' ist, wird in 'unbekannt' geändert
+    update_sql = f"UPDATE {new_table_name} SET short_name = 'unbekannt' WHERE short_name IS NULL OR short_name = ''"
+    cache_db.execute(update_sql)
+    cache_db.commit()

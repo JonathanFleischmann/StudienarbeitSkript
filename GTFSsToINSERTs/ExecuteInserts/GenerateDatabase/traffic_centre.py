@@ -39,6 +39,10 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
         
         return
 
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_stops_parent_station ON {old_table_name} (parent_station);")
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_stop_times_stop_id ON stop_times (stop_id);")
+    cache_db.commit()
+
     # Erstelle das Insert-Statement, um die Daten in die neue Tabelle 'traffic_centre' zu übertragen    
     insert_sql = f"INSERT INTO {new_table_name} ({', '.join(new_table_columns)}) VALUES ({', '.join(['?'] * len(new_table_columns))})"
 
@@ -111,5 +115,9 @@ def create_new_traffic_centre_cache_db_table(cache_db: sqlite3.Connection, batch
         cache_db.executemany(update_id_sql, location_type_ids)
         # committe die Änderungen
         cache_db.commit()
+
+    cache_db.execute("DROP INDEX IF EXISTS idx_stops_parent_station;")
+    cache_db.execute("DROP INDEX IF EXISTS idx_stop_times_stop_id;")
+    cache_db.commit()
 
     print("\r")

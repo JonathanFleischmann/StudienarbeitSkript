@@ -76,7 +76,7 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
     cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN start_time TEXT;")
     cache_db.commit()
     
-    # Weise jedem Ride die Startzeit zu
+    # Weise jedem trip die Startzeit zu
     # Hole dazu die Spalten 'departure_time' und 'trip_id' aus der Tabelle 'stop_times' wo 'stop_sequence' = 1
     # und füge die Startzeit in die Spalte 'start_time' der Tabelle 'ride' ein wo 'record_id' = 'trip_id'
     select_start_time_sql = f"SELECT departure_time, trip_id FROM stop_times WHERE stop_sequence = 1 LIMIT {batch_size} OFFSET ?"
@@ -98,3 +98,28 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         cache_db.commit()
 
         show_progress(i + batch_size, total_update_conditions, start_time, "Startzeiten aktualisieren")
+
+    
+    # Hole alle Einträge, die trotzdem keine Startzeit haben und lösche sie und ihre Einträge in der Tabelle 'stop_times'
+    select_trip_ids_sql = f"SELECT record_id FROM {new_table_name} WHERE start_time IS NULL LIMIT {batch_size} OFFSET ?"
+    delete_trip_sql = f"DELETE FROM {new_table_name} WHERE record_id = :1"
+    delete_stop_times_sql = f"DELETE FROM stop_times WHERE trip_id = :1"
+
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM {new_table_name} WHERE start_time IS NULL").fetchone()[0]
+    start_time = time.time()
+
+    for i in range(0, total_update_conditions, batch_size):
+        if stop_thread_var.get(): return
+
+        # Hole die record_ids aus der trips-Tabelle, bei denen die Startzeit NULL ist
+        trip_ids = cache_db.execute(select_trip_ids_sql, (i,)).fetchall()
+        # Wandle die record_ids in eine Liste von Tupeln um [(record_id)]
+        trip_ids = [(record_id[0],) for record_id in trip_ids]
+        # Führe das Delete-Statement aus
+        cache_db.executemany(delete_trip_sql, trip_ids)
+        cache_db.executemany(delete_stop_times_sql, trip_ids)
+        # committe die Änderungen
+        cache_db.commit()
+
+        if total_update_conditions > batch_size:
+            show_progress(i + batch_size, total_update_conditions, start_time, "\n trip-Einträge ohne valide segments löschen")

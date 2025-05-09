@@ -11,7 +11,7 @@ create_table_statements: dict[str,str] = {
         '''
         CREATE TABLE route (
             id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-            name VARCHAR2(200) NOT NULL,
+            name VARCHAR2(200),
             short_name VARCHAR2(10) NOT NULL,
             type VARCHAR2(50),
             description VARCHAR2(400),

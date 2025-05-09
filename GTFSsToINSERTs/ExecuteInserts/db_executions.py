@@ -13,6 +13,9 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
     :param db_table: Die Tabelle, für die die Inserts durchgeführt werden sollen.
     :param conn: Die Datenbankverbindung.
     """
+
+    # offset_record_id_map = {}
+
     try:
         # Ordner für Logs erstellen, falls nicht vorhanden
         os.makedirs(f"logs/{table_name}", exist_ok=True)
@@ -60,6 +63,16 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
                 batch_size = total_inserts - i
             select_this_batch_sql = batches_select_sql.replace("?", str(i))
             batch = cache_db_conn.execute(select_this_batch_sql).fetchall()
+
+            # offset = i
+            # for row in batch:
+            #     # hole die record_id aus der Map
+            #     record_id = row[0]
+            #     offset_record_id_map[offset] = record_id
+            #     # entferne die record_id aus dem Batch
+            #     row = row[1:]
+            #     offset += 1
+                    
 
             # hole die Datentypen für die Tabelle
             column_datatypes = get_datatypes_for_table(table_name)
@@ -140,6 +153,9 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
         # Fehlerprotokoll schreiben
         if batch_errors:
             with open(f"logs/" + table_name + "/inserts_error_file.txt", "w", encoding="utf-8") as error_log:
+                error_log.write(f"Reihenfolge, in der die Input-Tuple-Werte auftreten:\n")
+                error_log.write(f"  {', '.join(columns_to_insert)}\n\n")
+
                 for rownum, error_msg, failed_insert in batch_errors:
                     if stop_thread_var.get(): return
                     error_log.write(f"❌ FEHLER in Zeile {rownum}: {error_msg}\n  ➝ SQL: {failed_insert}\n")

@@ -29,7 +29,7 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
     if "stop_headsign" in old_table_columns:
         table_edit_sql.append(f"ALTER TABLE {new_table_name} RENAME COLUMN stop_headsign TO destination;")
     # wenn die Spalte 'stop_headsign' in der Tabelle 'stop_times' nicht vorhanden ist,
-    # aber die Spalte 'headsign' in der Tabelle 'ride' vorhanden ist, dann füge die Spalte 'destination' hinzu
+    # aber die Spalte 'headsign' in der Tabelle 'trip' vorhanden ist, dann füge die Spalte 'destination' hinzu
     else:
         table_edit_sql.append(f"ALTER TABLE {new_table_name} ADD COLUMN destination TEXT;")
     if "pickup_type" in old_table_columns:
@@ -41,18 +41,19 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
         cache_db.execute(sql)
     cache_db.commit()
 
-
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id_sequence ON {new_table_name} (trip_id, sequence);")
+    cache_db.commit()
 
     # Ersetze die 'trip_id' in der Tabelle 'segment' mit der ID der 'trip'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM trip LIMIT {batch_size} OFFSET ?"
     update_id_sql = f"UPDATE {new_table_name} SET trip_id = :1 WHERE trip_id = :2"
 
-    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM ride").fetchone()[0]
+    total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM trip").fetchone()[0]
 
     for i in range(0, total_update_conditions, batch_size):
         if stop_thread_var.get(): return
 
-        # Hole die Kombinationen aus ids und record_ids aus der ride-Tabelle
+        # Hole die Kombinationen aus ids und record_ids aus der trip-Tabelle
         trip_ids = cache_db.execute(select_ids_sql, (i,)).fetchall()
         # Wandle die Kombinationen in eine Liste von Tupeln um [(id, record_id)]
         trip_ids = [(str(id), record_id) for id, record_id in trip_ids]
@@ -74,32 +75,45 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
 
     # TODO: könnte Probleme geben, da kein Alias für die Tabelle 'segment' verwendet wird
     update_sql = f"""
-        UPDATE {new_table_name}
+        UPDATE {new_table_name} AS recent_row
         SET 
             end_point = (
                 SELECT start_point 
                 FROM {new_table_name} AS next_row
-                WHERE next_row.trip_id = {new_table_name}.trip_id
-                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+                WHERE next_row.trip_id = recent_row.trip_id
+                AND CAST(next_row.sequence AS INTEGER) = CAST(recent_row.sequence AS INTEGER) + 1
             ),
             arrival_time = (
                 SELECT arrival_time
                 FROM {new_table_name} AS next_row
-                WHERE next_row.trip_id = {new_table_name}.trip_id
-                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
-            ),
+                WHERE next_row.trip_id = recent_row.trip_id
+                AND CAST(next_row.sequence AS INTEGER) = CAST(recent_row.sequence AS INTEGER) + 1
+            )
+        WHERE EXISTS (
+            SELECT 1
+            FROM {new_table_name} AS next_row
+            WHERE next_row.trip_id = recent_row.trip_id
+            AND CAST(next_row.sequence AS INTEGER) = CAST(recent_row.sequence AS INTEGER) + 1
+        );
+        """
+    cache_db.execute(update_sql)
+    cache_db.commit()
+
+    if "drop_off_type" in old_table_columns:
+        update_sql = f"""
+        UPDATE {new_table_name} AS recent_row
+        SET
             descend_type = (
                 SELECT descend_type
                 FROM {new_table_name} AS next_row
-                WHERE next_row.trip_id = {new_table_name}.trip_id
-                AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+                WHERE next_row.trip_id = recent_row.trip_id
+                AND CAST(next_row.sequence AS INTEGER) = CAST(recent_row.sequence AS INTEGER) + 1
             )
-        WHERE end_point IS NULL
-        AND EXISTS (
+        WHERE EXISTS (
             SELECT 1
             FROM {new_table_name} AS next_row
-            WHERE next_row.trip_id = {new_table_name}.trip_id
-            AND CAST(next_row.sequence AS INTEGER) = CAST({new_table_name}.sequence AS INTEGER) + 1
+            WHERE next_row.trip_id = recent_row.trip_id
+            AND CAST(next_row.sequence AS INTEGER) = CAST(recent_row.sequence AS INTEGER) + 1
         );
         """
     cache_db.execute(update_sql)
@@ -109,21 +123,12 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
 
     # Lösche jeweils den letzten Datensatz mit der höchsten 'sequence' für jeden 'trip_id' in der Tabelle 'segment'
     delete_sql = f"""
-        DELETE FROM {new_table_name}
-        WHERE record_id IN (
-            SELECT record_id
-            FROM {new_table_name} AS t1
-            WHERE t1.sequence = (
-                SELECT MAX(t2.sequence)
-                FROM {new_table_name} AS t2
-                WHERE t2.trip_id = t1.trip_id
-            )
-        );
+    DELETE FROM {new_table_name} WHERE end_point IS NULL;
     """
     cache_db.execute(delete_sql)
     cache_db.commit()
 
-
+    print(f"\rErsetze die 'enter_type' und 'descend_type' in der Tabelle '{new_table_name}' mit der ID der 'stop_type'-Tabelle - Dies kann einige Minuten dauern... ")
 
     # Ersetze die 'enter_type' und 'descend_type' in der Tabelle 'segment' mit der ID der 'stop_type'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM stop_type LIMIT {batch_size} OFFSET ?"
@@ -148,7 +153,7 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
         # committe die Änderungen
         cache_db.commit()
 
-
+    print(f"\rErsetze die 'start_point' und 'end_point' in der Tabelle '{new_table_name}' mit der ID der 'traffic_point'-Tabelle - Dies kann einige Minuten dauern... ")
 
     # Ersetze die 'start_point' und 'end_point' in der Tabelle 'segment' mit der ID der 'traffic_point'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM traffic_point LIMIT {batch_size} OFFSET ?"
@@ -174,6 +179,19 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
         cache_db.commit()
 
 
+    # Erstelle Indexe für die Tabelle 'trip'
+    cache_db.execute("CREATE INDEX IF NOT EXISTS idx_trip_id ON trip (id);")
+
+    # Erstelle Indexe für die Tabelle 'traffic_point'
+    cache_db.execute("CREATE INDEX IF NOT EXISTS idx_traffic_point_id ON traffic_point (id);")
+
+    # Erstelle Indexe für die Tabelle 'segment'
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id ON {new_table_name} (trip_id);")
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_end_point ON {new_table_name} (end_point);")
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_record_id_sequence_trip_id ON {new_table_name} (record_id, sequence, trip_id);")
+
+    # Committe die Änderungen
+    cache_db.commit()
 
     print(f"\rFülle die Spalte 'destination' in der Tabelle '{new_table_name}' aus - Dies kann einige Minuten dauern... ")
 
@@ -223,4 +241,4 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
         cache_db.execute(f"ALTER TABLE trip DROP COLUMN trip_headsign;")
         cache_db.commit()
 
-
+    print(f"\r")
