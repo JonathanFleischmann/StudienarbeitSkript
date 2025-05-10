@@ -251,11 +251,3 @@ create_or_replace_trigger_statements: dict[str,str] = {
         END;
         ''',
 }
-
-
-
-
-
-
-
-

@@ -1,8 +1,8 @@
 import cx_Oracle
 
-from CreateTables.create_table_and_trigger_statements import delete_table_order, create_table_statements, create_or_replace_trigger_statements
-from CreateTables.create_table import create_table, delete_table
-from CreateTables.create_trigger import create_or_replace_trigger
+from CreateTables.statements import delete_table_order, create_table_statements, create_or_replace_trigger_statements
+from CreateTables.maintain_table import create_table, delete_table
+from CreateTables.maintain_trigger import create_or_replace_trigger
 
 def create_all_tables(oracle_db_connection: cx_Oracle.Connection, delete_existing_tables: bool, stop_thread_var):
     '''
