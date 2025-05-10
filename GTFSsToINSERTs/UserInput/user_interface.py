@@ -327,6 +327,5 @@ def update_visibility():
     toggle_visibility(delete_tables_checkbox, [ModeEnum.CREATE_TABLES])
     toggle_visibility(gtfs_path_frame, [ModeEnum.INSERT_GTFS])
     toggle_visibility(batch_size_frame, [ModeEnum.INSERT_GTFS])
-    toggle_visibility(db_select_frame, [ModeEnum.RELATIONAL_ANALYSIS])
     toggle_visibility(relational_analysis_frame, [ModeEnum.RELATIONAL_ANALYSIS])
 
