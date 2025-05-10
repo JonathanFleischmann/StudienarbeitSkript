@@ -14,13 +14,8 @@ from UserInput.thread_control import stop_thread
 class ModeEnum(Enum):
     CREATE_TABLES = 1
     INSERT_GTFS = 2
-    RELATIONAL_TO_GRAPH = 3
-    PERFORMANCE_ANALYSIS = 4
-
-class DatabaseEnum(Enum):
-    ORACLE_DB = 1
-    NEO4J = 2
-
+    GRAPH_ANALYSIS = 3
+    RELATIONAL_ANALYSIS = 4
 
 
 def on_submit(stop_thread_var):
@@ -39,9 +34,9 @@ def on_submit(stop_thread_var):
         thread.start()
         running_thread = thread
 
-    elif mode == ModeEnum.PERFORMANCE_ANALYSIS:
+    elif mode == ModeEnum.RELATIONAL_ANALYSIS:
         # Starte den Thread für die Performance-Analyse
-        thread = threading.Thread(target=lambda: submit_performance_analysis(stop_thread_var), daemon=True)
+        thread = threading.Thread(target=lambda: submit_relational_analysis(stop_thread_var), daemon=True)
         thread.start()
         running_thread = thread
 
@@ -112,36 +107,35 @@ def submit_insert_gtfs(stop_thread_var):
             stop_thread_var
         )
 
-def submit_performance_analysis(stop_thread_var):
+def submit_relational_analysis(stop_thread_var):
     global connect_method, oracle_statement_method
-    if referenced_db == DatabaseEnum.ORACLE_DB:
-        if validate_entries(
-            [   (db_host, "Host"),
-                (db_port, "Port"),
-                (db_service_name, "Service-Name"),
-                (db_username, "Username"),
-                (db_password, "Password")   ]
-        ):
-            # Leere die Konsolenausgabe
-            console_text.configure(state="normal")
-            console_text.delete(1.0, tk.END)
-            console_text.configure(state="disabled")
+    if validate_entries(
+        [   (db_host, "Host"),
+            (db_port, "Port"),
+            (db_service_name, "Service-Name"),
+            (db_username, "Username"),
+            (db_password, "Password")   ]
+    ):
+        # Leere die Konsolenausgabe
+        console_text.configure(state="normal")
+        console_text.delete(1.0, tk.END)
+        console_text.configure(state="disabled")
 
-            # Starte die Verbindung zur Datenbank
-            oracle_db_connection = connect_method(
-                db_host.get(),
-                db_port.get(),
-                db_service_name.get(),
-                db_username.get(),
-                db_password.get(),
-            )
+        # Starte die Verbindung zur Datenbank
+        oracle_db_connection = connect_method(
+            db_host.get(),
+            db_port.get(),
+            db_service_name.get(),
+            db_username.get(),
+            db_password.get(),
+        )
 
-            if stop_thread_var.get(): return
+        if stop_thread_var.get(): return
 
-            # Starte die Performance-Analyse
-            statement = performance_statement_text.get("1.0", tk.END).strip()
-            result = oracle_statement_method(oracle_db_connection, statement)
-            print(result)
+        # Starte die Performance-Analyse
+        statement = performance_statement_text.get("1.0", tk.END).strip()
+        result = oracle_statement_method(oracle_db_connection, statement)
+        print(result)
 
 
 def on_cancel(root, stop_thread_var):
@@ -173,19 +167,18 @@ def create_label_entry(parent, text, row, show=None, validate_command=None):
 
 def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_inserts, execute_statement_on_oracle_db):
     global db_host, db_port, db_service_name, db_username, db_password, delete_tables_var, batch_size, gtfs_path, performance_statement_text, running_thread, console_text
-    global mode, referenced_db, connect_method, create_tables_method, gtfs_insert_method, oracle_statement_method
+    global mode, connect_method, create_tables_method, gtfs_insert_method, oracle_statement_method
 
     connect_method = get_db_connection
     create_tables_method = create_tables_and_triggers
     gtfs_insert_method = gtfs_to_inserts
     oracle_statement_method = execute_statement_on_oracle_db
     
-    global db_select_frame, db_config_frame, delete_tables_checkbox, gtfs_path_frame, batch_size_frame, performance_statement_frame
+    global db_select_frame, db_config_frame, delete_tables_checkbox, gtfs_path_frame, batch_size_frame, relational_analysis_frame
     
     running_thread = None
 
     mode = ModeEnum.INSERT_GTFS
-    referenced_db = DatabaseEnum.ORACLE_DB
 
     root = tk.Tk()
 
@@ -214,16 +207,10 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     button_width = 24  # Feste Breite für alle Buttons
     ttk.Button(actions_frame, text="CREATE TABLES", style="Orange.TButton", width=button_width, command=lambda: set_create_tables_mode()).grid(row=0, column=0, padx=5, pady=2)
     ttk.Button(actions_frame, text="INSERT GTFS", style="Orange.TButton", width=button_width, command=lambda: set_insert_gtfs_mode()).grid(row=0, column=1, padx=5, pady=2)
-    ttk.Button(actions_frame, text="RELATIONAL TO GRAPH", style="Orange.TButton", width=button_width, command=lambda: set_relational_to_graph_mode()).grid(row=1, column=0, padx=5, pady=4)
-    ttk.Button(actions_frame, text="PERFORMANCE ANALYSIS", style="Orange.TButton", width=button_width, command=lambda: set_performance_analysis_mode()).grid(row=1, column=1, padx=5, pady=4)
+    ttk.Button(actions_frame, text="GRAPH ANALYSIS", style="Orange.TButton", width=button_width, command=lambda: set_graph_analysis_mode()).grid(row=1, column=0, padx=5, pady=4)
+    ttk.Button(actions_frame, text="RELATIONAL ANALYSIS", style="Orange.TButton", width=button_width, command=lambda: set_relational_analysis_mode()).grid(row=1, column=1, padx=5, pady=4)
 
-    # Auswahl zwischen OracleDB und Neo4j
-    db_select_frame = LabelFrame(input_frame, "Auswahl zwischen den Datenbanken", tk, ttk).set_row(1).set_padding((5, 5)).build()
-    # Buttons für die Auswahl
-    button_width = 24  # Feste Breite für alle Buttons
-    ttk.Button(db_select_frame, text="OracleDB", style="TButton", width=button_width, command=lambda: set_oracle_db()).grid(row=0, column=0, padx=5, pady=2)
-    ttk.Button(db_select_frame, text="Neo4j", style="TButton", width=button_width, command=lambda: set_neo4j()).grid(row=0, column=1, padx=5, pady=2)
-
+    
     action_data_frame = LabelFrame(input_frame, "Aktions-Daten", tk, ttk).set_padding((0,4)).set_row(2).build()
 
     # Labels und Eingabefelder für Datenbankkonfiguration
@@ -250,10 +237,10 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     batch_size = create_label_entry(batch_size_frame, "Batch-Size:", 2, validate_command=vcmd)
 
     # Eingabe für Statement für Performance-Analyse
-    performance_statement_frame = LabelFrame(action_data_frame, "SQL-Statement für Performance-Analyse auf OracleDB", tk, ttk).set_row(1).set_padding((0,3)).build()
-    performance_statement_text = tk.Text(performance_statement_frame, height=6, width=34, wrap="word")
+    relational_analysis_frame = LabelFrame(action_data_frame, "SQL-Statement für Performance-Analyse auf OracleDB", tk, ttk).set_row(1).set_padding((0,3)).build()
+    performance_statement_text = tk.Text(relational_analysis_frame, height=6, width=34, wrap="word")
     performance_statement_text.grid(row=0, column=0, padx=10, pady=5, sticky=tk.EW)
-    performance_statement_scrollbar = ttk.Scrollbar(performance_statement_frame, command=performance_statement_text.yview)
+    performance_statement_scrollbar = ttk.Scrollbar(relational_analysis_frame, command=performance_statement_text.yview)
     performance_statement_scrollbar.grid(row=0, column=1, sticky=tk.NS)
     performance_statement_text.config(yscrollcommand=performance_statement_scrollbar.set)
 
@@ -313,36 +300,22 @@ def set_insert_gtfs_mode():
     mode = ModeEnum.INSERT_GTFS
     update_visibility()
 
-def set_relational_to_graph_mode():
+def set_graph_analysis_mode():
     global mode
-    mode = ModeEnum.RELATIONAL_TO_GRAPH
+    mode = ModeEnum.GRAPH_ANALYSIS
     update_visibility()
 
-def set_performance_analysis_mode():
+def set_relational_analysis_mode():
     global mode
-    mode = ModeEnum.PERFORMANCE_ANALYSIS
-    update_visibility()
-
-def set_oracle_db():
-    global referenced_db
-    referenced_db = DatabaseEnum.ORACLE_DB
-    update_visibility()
-
-def set_neo4j():
-    global referenced_db
-    referenced_db = DatabaseEnum.NEO4J
+    mode = ModeEnum.RELATIONAL_ANALYSIS
     update_visibility()
 
 
-def toggle_visibility(widget, visible_when: list[ModeEnum|tuple[ModeEnum, DatabaseEnum]]):
-    global mode, referenced_db
+def toggle_visibility(widget, visible_when: list[ModeEnum]):
+    global mode
     is_visible = False
-    mode_tuple = (mode, referenced_db)
     for entry in visible_when:
-        if isinstance(entry, tuple):
-            if entry == (mode, referenced_db):
-                is_visible = True
-        elif mode == entry:
+        if mode == entry:
             is_visible = True
     if is_visible:
         widget.grid()
@@ -350,10 +323,10 @@ def toggle_visibility(widget, visible_when: list[ModeEnum|tuple[ModeEnum, Databa
         widget.grid_remove()
 
 def update_visibility():
-    toggle_visibility(db_config_frame, [ModeEnum.CREATE_TABLES, ModeEnum.INSERT_GTFS, (ModeEnum.PERFORMANCE_ANALYSIS, DatabaseEnum.ORACLE_DB)])
+    toggle_visibility(db_config_frame, [ModeEnum.CREATE_TABLES, ModeEnum.INSERT_GTFS, ModeEnum.RELATIONAL_ANALYSIS])
     toggle_visibility(delete_tables_checkbox, [ModeEnum.CREATE_TABLES])
     toggle_visibility(gtfs_path_frame, [ModeEnum.INSERT_GTFS])
     toggle_visibility(batch_size_frame, [ModeEnum.INSERT_GTFS])
-    toggle_visibility(db_select_frame, [ModeEnum.PERFORMANCE_ANALYSIS])
-    toggle_visibility(performance_statement_frame, [(ModeEnum.PERFORMANCE_ANALYSIS, DatabaseEnum.ORACLE_DB)])
+    toggle_visibility(db_select_frame, [ModeEnum.RELATIONAL_ANALYSIS])
+    toggle_visibility(relational_analysis_frame, [ModeEnum.RELATIONAL_ANALYSIS])
 

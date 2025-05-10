@@ -7,7 +7,7 @@ from ExecuteInserts.GenerateDatabase.height import clear_height_cache_db_table
 from ExecuteInserts.GenerateDatabase.location_type import create_new_location_type_cache_db_table
 from ExecuteInserts.GenerateDatabase.traffic_centre import create_new_traffic_centre_cache_db_table
 from ExecuteInserts.GenerateDatabase.traffic_point import clear_traffic_point_cache_db_table
-from ExecuteInserts.GenerateDatabase.deviation import clear_deviation_cache_db_table
+from ExecuteInserts.GenerateDatabase.deviation import clear_deviation_cache_db_table, append_trip_with_period_and_weekdays_if_deviation_positive
 from ExecuteInserts.GenerateDatabase.trip_deviation import create_new_trip_deviation_cache_db_table
 from ExecuteInserts.GenerateDatabase.walk_type import create_new_walk_type_cache_db_table
 from ExecuteInserts.GenerateDatabase.stop_type import create_new_stop_type_cache_db_table
@@ -23,6 +23,11 @@ def execute_inserts(cache_db, oracle_db_connection, stop_thread_var, batch_size=
     Diese Funktion überträgt die in die Cache-Datenbank eingelesenen GTFS-Tabellen in die Oracle-Datenbank.
     :param gtfs_table_map: Eine Map mit den GTFS-Tabellen
     """
+
+    # Vorverarbeitung: Positive Abweichungen als eigene Fahrpläne hinzufügen
+    if stop_thread_var.get(): return
+    append_trip_with_period_and_weekdays_if_deviation_positive(cache_db, stop_thread_var)
+
 
     if stop_thread_var.get(): return
     clear_agency_cache_db_table(cache_db)
