@@ -157,10 +157,10 @@ def append_trip_with_period_and_weekdays_if_deviation_positive(
 
 
         # Füge die Daten der Abweichungen in die Tabelle 'calendar_dates' ein
-        insert_sql = f"INSERT INTO calendar_dates (service_id, date, exception_type) VALUES (?, ?, ?)"
+        insert_sql = f"INSERT INTO calendar_dates (record_id, service_id, date, exception_type) VALUES (?, ?, ?, ?)"
 
         # Generiere Tuples mit den Werten für die Abweichungen
-        values = [(new_service_id, date, 2) for date in value["deviations"]]
+        values = [(new_service_id + date, new_service_id, date, 2) for date in value["deviations"]]
 
         # Führe das Insert-Statement aus
         cache_db.executemany(insert_sql, values)
@@ -222,4 +222,3 @@ def append_trip_with_period_and_weekdays_if_deviation_positive(
     cache_db.commit()
 
     print(f"\r Positive Abweichungen erfolgreich aus der Tabelle {old_table_name} extrahiert")
-

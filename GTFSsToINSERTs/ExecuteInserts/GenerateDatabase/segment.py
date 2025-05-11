@@ -41,7 +41,7 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
         cache_db.execute(sql)
     cache_db.commit()
 
-    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id_sequence ON {new_table_name} (trip_id, sequence);")
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id ON {new_table_name} (trip_id);")
     cache_db.commit()
 
     # Ersetze die 'trip_id' in der Tabelle 'segment' mit der ID der 'trip'-Tabelle
@@ -73,7 +73,10 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
 
     print(f"\rFülle die Spalten 'end_point', 'arrival_time' und 'descend_type' in der Tabelle '{new_table_name}' aus - Dies kann einige Minuten dauern... ")
 
-    # TODO: könnte Probleme geben, da kein Alias für die Tabelle 'segment' verwendet wird
+    
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id_sequence ON {new_table_name} (trip_id, sequence);")
+    cache_db.commit()
+
     update_sql = f"""
         UPDATE {new_table_name} AS recent_row
         SET 
@@ -121,6 +124,9 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
 
     print(f"\rLösche die letzten Datensätze mit der höchsten 'sequence' für jeden 'trip_id' in der Tabelle '{new_table_name}' - Dies kann einige Minuten dauern... ")
 
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_end_point ON {new_table_name} (end_point);")
+    cache_db.commit()
+
     # Lösche jeweils den letzten Datensatz mit der höchsten 'sequence' für jeden 'trip_id' in der Tabelle 'segment'
     delete_sql = f"""
     DELETE FROM {new_table_name} WHERE end_point IS NULL;
@@ -129,6 +135,9 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
     cache_db.commit()
 
     print(f"\rErsetze die 'enter_type' und 'descend_type' in der Tabelle '{new_table_name}' mit der ID der 'stop_type'-Tabelle - Dies kann einige Minuten dauern... ")
+
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_start_point ON {new_table_name} (start_point);")
+    cache_db.commit()
 
     # Ersetze die 'enter_type' und 'descend_type' in der Tabelle 'segment' mit der ID der 'stop_type'-Tabelle
     select_ids_sql = f"SELECT id, record_id FROM stop_type LIMIT {batch_size} OFFSET ?"
@@ -186,8 +195,6 @@ def clear_segment_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, 
     cache_db.execute("CREATE INDEX IF NOT EXISTS idx_traffic_point_id ON traffic_point (id);")
 
     # Erstelle Indexe für die Tabelle 'segment'
-    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_trip_id ON {new_table_name} (trip_id);")
-    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_end_point ON {new_table_name} (end_point);")
     cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_segment_record_id_sequence_trip_id ON {new_table_name} (record_id, sequence, trip_id);")
 
     # Committe die Änderungen

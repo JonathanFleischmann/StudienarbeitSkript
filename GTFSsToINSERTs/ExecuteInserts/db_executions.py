@@ -153,7 +153,7 @@ def do_inserts(table_name, cache_db_conn: sqlite3.Connection, oracle_db_conn, ba
         # Fehlerprotokoll schreiben
         if batch_errors:
             with open(f"logs/" + table_name + "/inserts_error_file.txt", "w", encoding="utf-8") as error_log:
-                error_log.write(f"Reihenfolge, in der die Input-Tuple-Werte auftreten:\n")
+                error_log.write(f"Reihenfolge, in der die Insert-Tuple-Werte auftreten:\n")
                 error_log.write(f"  {', '.join(columns_to_insert)}\n\n")
 
                 for rownum, error_msg, failed_insert in batch_errors:

@@ -82,27 +82,36 @@ def map_to_oracle_timestamp(timestamp_str: str) -> str:
 
     except Exception as e:
         return f"Fehler: {str(e)}"
-    
+
 def map_to_datetime(timestamp_str: str) -> datetime:
     """
-     Konvertiert einen String im Format 'HH:MM:SS' in das datetime-Format.
+    Konvertiert einen String im Format 'HH:MM:SS' (auch ohne führende Null bei der Stunde) in das datetime-Format.
 
-    :param timestamp_str: Zeitstempel als String im Format "HH:MM:SS"
-    :return: Entsprechender String im Format datetime(yyyy, (m)m, (d)d, (h)h, (m)m, (s)s)
+    :param timestamp_str: Zeitstempel als String, z.B. "5:18:00" oder "05:18:00"
+    :return: datetime-Objekt oder Fehler-String
     """
     try:
-        # Überprüfung: Muss 8 Zeichen lang sein
-        if len(timestamp_str) != 8:
+        # Splitte und ergänze führende Nullen falls nötig
+        parts = timestamp_str.split(":")
+        if len(parts) != 3:
             raise ValueError("Der Zeitstempel muss im Format 'HH:MM:SS' sein.")
+        hour, minute, second = parts
+        hour = hour.zfill(2)
+        minute = minute.zfill(2)
+        second = second.zfill(2)
+        normalized = f"{hour}:{minute}:{second}"
 
         # Wenn über 24 Stunden hinausgegangen wird, wird wieder bei 00:00:00 begonnen
-        if int(timestamp_str[:2]) >= 24:
-            timestamp_str = "00" + timestamp_str[2:]
-        
-        return datetime.strptime(timestamp_str, '%H:%M:%S')
+        if int(hour) >= 24:
+            hour = str(int(hour) % 24)
+            if len(hour) == 1:
+                hour = "0" + hour
+            normalized = f"{hour}:{minute}:{second}"
+
+        return datetime.strptime(normalized, '%H:%M:%S')
 
     except Exception as e:
-        return f"Fehler: {str(e)}"  
+        return f"Fehler: {str(e)}" 
 
 
 def get_minute_difference(first_point_in_time: str, second_point_in_time: str) -> int:
@@ -212,4 +221,4 @@ def show_progress(current, total, start_time, message):
     remaining_minutes = int(estimated_remaining_time // 60)
     remaining_seconds = int(estimated_remaining_time % 60)
     print(f"\r{message} Fortschritt: **{progress_percent}%** | "
-            f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**")
+            f"Geschätzte Restzeit: **{remaining_minutes}m {remaining_seconds}s**",  end="")

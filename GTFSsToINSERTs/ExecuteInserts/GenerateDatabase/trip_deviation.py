@@ -9,15 +9,15 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
 
     new_table_name = "trip_deviation"
 
-    # Erstelle eine neue Tabelle 'ride_exception' in der Datenbank
-    create_ride_exception_table_sql = f"""
+    # Erstelle eine neue Tabelle 'trip_deviation' in der Datenbank
+    create_trip_deviation_table_sql = f"""
     CREATE TABLE IF NOT EXISTS {new_table_name} (
         record_id TEXT PRIMARY KEY,
         trip_id TEXT,
         deviation_id TEXT
     );
     """
-    cache_db.execute(create_ride_exception_table_sql)
+    cache_db.execute(create_trip_deviation_table_sql)
     cache_db.commit()
 
     # Füge die 'id' in 'trip' und die 'id' in 'deviation' als 'trip_id' und 'deviation_id' in die neue Tabelle 
@@ -58,7 +58,7 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
             trip_deviation_ids[index] = (record_id, trip_id, deviation_id)
             index += 1
 
-        # Füge die Daten in die neue Tabelle 'ride_exception' ein
+        # Füge die Daten in die neue Tabelle 'trip_deviation' ein
         cache_db.executemany(insert_sql, trip_deviation_ids)
 
         # committe die Änderungen
@@ -74,7 +74,7 @@ def create_new_trip_deviation_cache_db_table(cache_db: sqlite3.Connection, batch
 
 
     
-    # Lösche die beiden Spalten 'service_id' in der Tabelle 'ride' und 'exception_table'
+    # Lösche die beiden Spalten 'service_id' in der Tabelle 'trip' und 'exception_table'
     delete_sql = f"""
     ALTER TABLE trip DROP COLUMN service_id;
     ALTER TABLE deviation DROP COLUMN service_id;

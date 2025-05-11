@@ -7,6 +7,8 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
     old_table_name = "trips"
     new_table_name = "trip"
 
+    print("\nMappe die Daten der GTFS-Datei 'trips.txt' in die Tabelle 'trip'")
+
     # Erhalte die Spalten der Tabelle 'trips' aus der Datenbank
     old_table_columns = cache_db.execute(f"PRAGMA table_info({old_table_name})").fetchall()
     # Konvertiere die Spalten in eine Liste von Strings
@@ -14,7 +16,7 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
     
     # erstelle die SQL-Statements, die die Spalten in der Tabelle entsprechend anpassen
     table_edit_sql = []
-    # Ändere den Namen der Tabelle 'trips' in 'ride'
+    # Ändere den Namen der Tabelle 'trips' in 'trip'
     table_edit_sql.append(f"ALTER TABLE {old_table_name} RENAME TO {new_table_name};")
 
     for column in old_table_columns:
@@ -48,7 +50,7 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         # committe die Änderungen
         cache_db.commit()
 
-        show_progress(i + batch_size, total_update_conditions, start_time, "Route-IDs aktualisieren")
+        show_progress(i + batch_size, total_update_conditions, start_time, "trip: Route-IDs aktualisieren")
 
     # Füge die neu generierte ID der 'period'-Tabelle für die 'service_id' in die Spalte 'period_id' in der cache-DB hinzu
     select_ids_sql = f"SELECT id, record_id FROM period LIMIT {batch_size} OFFSET ?"
@@ -69,16 +71,20 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         # committe die Änderungen
         cache_db.commit()
 
-        show_progress(i + batch_size, total_update_conditions, start_time, "Period-IDs aktualisieren")
+        show_progress(i + batch_size, total_update_conditions, start_time, "trip: Period-IDs aktualisieren")
 
     
     # Füge die Spalte 'start_time' hinzu
     cache_db.execute(f"ALTER TABLE {new_table_name} ADD COLUMN start_time TEXT;")
     cache_db.commit()
+
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_stop_times_sequence ON stop_times (stop_sequence);")
+    cache_db.execute(f"CREATE INDEX IF NOT EXISTS idx_trip_record_id ON trip (record_id);")
+    cache_db.commit()
     
     # Weise jedem trip die Startzeit zu
     # Hole dazu die Spalten 'departure_time' und 'trip_id' aus der Tabelle 'stop_times' wo 'stop_sequence' = 1
-    # und füge die Startzeit in die Spalte 'start_time' der Tabelle 'ride' ein wo 'record_id' = 'trip_id'
+    # und füge die Startzeit in die Spalte 'start_time' der Tabelle 'trip' ein wo 'record_id' = 'trip_id'
     select_start_time_sql = f"SELECT departure_time, trip_id FROM stop_times WHERE stop_sequence = 1 LIMIT {batch_size} OFFSET ?"
     update_start_time_sql = f"UPDATE {new_table_name} SET start_time = :1 WHERE record_id = :2"
 
@@ -97,7 +103,7 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         # committe die Änderungen
         cache_db.commit()
 
-        show_progress(i + batch_size, total_update_conditions, start_time, "Startzeiten aktualisieren")
+        show_progress(i + batch_size, total_update_conditions, start_time, "trip: Startzeiten aktualisieren")
 
     
     # Hole alle Einträge, die trotzdem keine Startzeit haben und lösche sie und ihre Einträge in der Tabelle 'stop_times'
@@ -107,6 +113,8 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
 
     total_update_conditions = cache_db.execute(f"SELECT COUNT(*) FROM {new_table_name} WHERE start_time IS NULL").fetchone()[0]
     start_time = time.time()
+
+    print("\n")
 
     for i in range(0, total_update_conditions, batch_size):
         if stop_thread_var.get(): return
@@ -122,4 +130,9 @@ def clear_trip_cache_db_table(cache_db: sqlite3.Connection, batch_size: int, sto
         cache_db.commit()
 
         if total_update_conditions > batch_size:
-            show_progress(i + batch_size, total_update_conditions, start_time, "\n trip-Einträge ohne valide segments löschen")
+            show_progress(i + batch_size, total_update_conditions, start_time, "trip-Einträge ohne valide segments löschen")
+
+    # Lösche die Indizes
+    cache_db.execute(f"DROP INDEX IF EXISTS idx_stop_times_sequence;")
+    cache_db.execute(f"DROP INDEX IF EXISTS idx_trip_record_id;")
+    cache_db.commit()

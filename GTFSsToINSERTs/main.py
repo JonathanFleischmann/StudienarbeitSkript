@@ -100,17 +100,23 @@ def gtfs_to_inserts(
             return
 
         execute_inserts(cache_db, oracle_db_connection, stop_thread_var, batch_size)
-        _delete_cache_database(cache_db)
     
     except sqlite3.Error as e:
         print(f"❌ SQLite-Fehler (Cache-Datenbank): {e}")
         _delete_cache_database(cache_db)
+        oracle_db_connection.close()
     except cx_Oracle.DatabaseError as e:
         print(f"❌ Oracle-Fehler: {e}")
         _delete_cache_database(cache_db)
+        oracle_db_connection.close()
     except Exception as e:
         print(f"❌ Unerwarteter Fehler: {e}")
         _delete_cache_database(cache_db)
+        oracle_db_connection.close()
+
+    finally:
+        _delete_cache_database(cache_db)
+        oracle_db_connection.close()
 
 
 def execute_statement_on_oracle_db(

@@ -194,7 +194,7 @@ unique_column_map: dict[list[str]] = {
     "agency": ["name"],
     "deviation": ["deviation_date"],
     "location_type": ["type"],
-    "segment": ["start_point", "end_point", "ride_id"],
+    "segment": ["start_point", "end_point", "trip_id"],
     "walk": ["start_point", "end_point", "walk_type_id"],
     "period": ["start_date", "end_date", "weekdays_id"],
     "trip_deviation": ["trip_id", "deviation_id"],
