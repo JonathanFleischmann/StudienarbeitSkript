@@ -155,7 +155,13 @@ def load_config_to_fields():
         set_entry_value(batch_size, config.get('batch_size', ''), tk)
 
 def select_gtfs_path():
-    folder_path = filedialog.askdirectory(title="Ordner auswählen")
+    global gtfs_path
+    # Öffne den Dialog zur Auswahl des Ordners
+    if gtfs_path.get() != "":
+        initial_dir = gtfs_path.get()
+    else:
+        initial_dir = None
+    folder_path = filedialog.askdirectory(initialdir=initial_dir, title="GTFS-Ordner auswählen")
     if folder_path:
         set_entry_value(gtfs_path, folder_path, tk)
 
@@ -174,7 +180,7 @@ def start_user_interface(get_db_connection, create_tables_and_triggers, gtfs_to_
     gtfs_insert_method = gtfs_to_inserts
     oracle_statement_method = execute_statement_on_oracle_db
     
-    global db_select_frame, db_config_frame, delete_tables_checkbox, gtfs_path_frame, batch_size_frame, relational_analysis_frame
+    global db_config_frame, delete_tables_checkbox, gtfs_path_frame, batch_size_frame, relational_analysis_frame
     
     running_thread = None
 
